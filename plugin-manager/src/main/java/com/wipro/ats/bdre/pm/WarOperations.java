@@ -62,13 +62,24 @@ public class WarOperations {
                         try {
                             Path sourcePath = new File(file1.getAbsolutePath()).toPath();
                             byte[] data = Files.readAllBytes(sourcePath);
+                            byte[] newLine=System.getProperty("line.separator").getBytes();
+
+                            // create a destination array that is the size of the two arrays
+                            byte[] destination = new byte[data.length + newLine.length];
+
+                            // copy ciphertext into start of destination (from pos 0, copy ciphertext.length bytes)
+                            System.arraycopy(data, 0, destination, 0, data.length);
+
+                            // copy mac into end of destination (from pos ciphertext.length, copy mac.length bytes)
+                            System.arraycopy(newLine, 0, destination, data.length, newLine.length);
+
                             String fileName = file1.getAbsolutePath().substring(0,file1.getAbsolutePath().lastIndexOf("."));
                             String language = fileName.substring(fileName.lastIndexOf("_"),fileName.length());
                             webappPath=webappPath.replaceAll("_[a-z][a-z][.]","_"+language + ".");
                             Path targetPath = new File(webappPath).toPath();
-                            Files.write(targetPath, data, StandardOpenOption.APPEND);
+                            Files.write(targetPath, destination, StandardOpenOption.APPEND);
                             Path authLocalizationFile = new File(webappPath.replaceAll("/mdui", "/auth")).toPath();
-                            Files.write(authLocalizationFile, data, StandardOpenOption.APPEND);
+                            Files.write(authLocalizationFile, destination, StandardOpenOption.APPEND);
                         }catch (IOException io) {
                             LOGGER.error(io + " : " + io.getMessage());
                             throw io;
