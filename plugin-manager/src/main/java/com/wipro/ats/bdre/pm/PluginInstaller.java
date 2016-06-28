@@ -67,7 +67,7 @@ public class PluginInstaller {
             folder.mkdir();
         }
         impotObject.unZipIt(restWarLocation, restWarLocation.substring(0, restWarLocation.lastIndexOf(".")));
-        warOperations.listOfFiles(folder,folder,"mdrest","");
+        warOperations.listOfFiles(folder,folder,"mdrest","78909fdds444tr#@$%");
 
     }}
 }

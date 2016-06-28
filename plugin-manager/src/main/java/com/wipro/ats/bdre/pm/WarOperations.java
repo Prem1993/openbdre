@@ -75,7 +75,15 @@ public class WarOperations {
 
                             String fileName = file1.getAbsolutePath().substring(0,file1.getAbsolutePath().lastIndexOf("."));
                             String language = fileName.substring(fileName.lastIndexOf("_"),fileName.length());
-                            webappPath=webappPath.replaceAll("_[a-z][a-z][.]","_"+language + ".");
+
+
+
+                            File classFolder = new File(webappPath.substring(0,webappPath.lastIndexOf("/")));
+                            for(File propertiesFiles : classFolder.listFiles() ){
+                                if(propertiesFiles.getName().contains(language)) {
+                                    webappPath = propertiesFiles.getAbsolutePath();
+                                }
+                            }
                             Path targetPath = new File(webappPath).toPath();
                             Files.write(targetPath, destination, StandardOpenOption.APPEND);
                             Path authLocalizationFile = new File(webappPath.replaceAll("/mdui", "/auth")).toPath();
