@@ -58,7 +58,7 @@ public class PluginInstaller {
              }
              impotObject.unZipIt(warLocation, warLocation.substring(0, warLocation.lastIndexOf(".")));
 
-             warOperations.listOfFiles(folder, folder,"mdui");
+             warOperations.listOfFiles(folder, folder,"mdui",plugin.getInstall().getUiWar().getLocalizationFile());
          }
          if ( !plugin.getInstall().getRestWar().getLocation().isEmpty()){
         String restWarLocation = pluginDescriptorJSON + "/" + plugin.getInstall().getRestWar().getLocation();
@@ -67,7 +67,7 @@ public class PluginInstaller {
             folder.mkdir();
         }
         impotObject.unZipIt(restWarLocation, restWarLocation.substring(0, restWarLocation.lastIndexOf(".")));
-        warOperations.listOfFiles(folder,folder,"mdrest");
+        warOperations.listOfFiles(folder,folder,"mdrest","");
 
     }}
 }

@@ -18,4 +18,13 @@ public class UiWar {
 
     private String location;
 
+    private String localizationFile;
+
+    public String getLocalizationFile() {
+        return localizationFile;
+    }
+
+    public void setLocalizationFile(String localizationFile) {
+        this.localizationFile = localizationFile;
+    }
 }
