@@ -10,10 +10,13 @@ import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Projections;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 @Transactional
 @Service
@@ -99,4 +102,40 @@ public class PluginDependencyDAO {
         }
     }
 
+    public List<String> dependencyCheckUnintallPlugin(String pluginUniqueId){
+        List<String> pluginDependencies = new ArrayList<String>();
+        Session session = sessionFactory.openSession();
+        try {
+            session.beginTransaction();
+            Criteria criteria = session.createCriteria(PluginDependency.class);
+            criteria.setProjection(Projections.property("installedPluginsByPluginUniqueId.pluginUniqueId")).add(Restrictions.eq("installedPluginsByDependentPluginUniqueId.pluginUniqueId",pluginUniqueId));
+            pluginDependencies=criteria.list();
+            session.getTransaction().commit();
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return pluginDependencies;
+    }
+       public void deleteByPluginUniqueId(String pluginUniqueId)
+      {
+          List<PluginDependency> pluginDependencies=new ArrayList<>();
+          Session session = sessionFactory.openSession();
+          try {
+              session.beginTransaction();
+              Criteria criteria = session.createCriteria(PluginDependency.class);
+              criteria.add(Restrictions.eq("installedPluginsByPluginUniqueId.pluginUniqueId",pluginUniqueId));
+              pluginDependencies=criteria.list();
+              for(PluginDependency pluginDependency:pluginDependencies)
+                  session.delete(pluginDependency);
+              session.getTransaction().commit();
+          } catch (MetadataException e) {
+              session.getTransaction().rollback();
+              LOGGER.error(e);
+          } finally {
+              session.close();
+          }
+      }
 }

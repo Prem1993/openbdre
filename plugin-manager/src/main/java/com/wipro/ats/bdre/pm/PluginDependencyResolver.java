@@ -5,6 +5,8 @@ import com.wipro.ats.bdre.md.pm.beans.Plugin;
 import com.wipro.ats.bdre.md.pm.beans.PluginDependency;
 import org.apache.log4j.Logger;
 
+import java.util.List;
+
 /**
  * Created by cloudera on 6/1/16.
  */
@@ -19,5 +21,12 @@ public class PluginDependencyResolver {
             }
         }
         return true;
+    }
+
+    List<String> dependencyCheckUnInstallPlugin(String pluginUniqueId)
+    {
+        com.wipro.ats.bdre.md.api.PluginDependency pluginDependency=new com.wipro.ats.bdre.md.api.PluginDependency();
+        return pluginDependency.dependencyCheckUnInstallPlugin(pluginUniqueId);
+
     }
 }

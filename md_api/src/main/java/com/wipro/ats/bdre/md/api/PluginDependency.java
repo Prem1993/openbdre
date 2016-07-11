@@ -48,4 +48,13 @@ public class PluginDependency extends MetadataAPIBase {
         List<com.wipro.ats.bdre.md.pm.beans.PluginDependency> pluginDependencies = new ArrayList<com.wipro.ats.bdre.md.pm.beans.PluginDependency>();
         return pluginDependencies;
     }
+
+    public List<String> dependencyCheckUnInstallPlugin(String pluginUniqueId){
+        List<String> pluginDependencies=pluginDependencyDAO.dependencyCheckUnintallPlugin(pluginUniqueId);
+        return pluginDependencies;
+    }
+    public void deleteByPluginUniqueId(String pluginUniqueId)
+    {
+
+    }
 }

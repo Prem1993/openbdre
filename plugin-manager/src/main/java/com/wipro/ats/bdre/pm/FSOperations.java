@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 /**
@@ -44,6 +46,18 @@ public class FSOperations {
     }
 
     public void chmodAction(FS fs,String pluginDescriptorJSON){
+
+    }
+
+    public void unInstallAction(FS fs,String pluginDescriptorJSON) throws FileNotFoundException{
+        try{
+            String homeDir = System.getProperty("user.home");
+            Path destPath = Paths.get(homeDir + "/" + fs.getDestinationLocation());
+            Files.deleteIfExists(destPath);
+
+        }catch (IOException f){
+            LOGGER.error("file to be deleted is not found" + f);
+        }
 
     }
 }

@@ -139,4 +139,11 @@ public class GetGeneralConfig extends MetadataAPIBase {
     public Object execute(String[] params) {
         return null;
     }
+
+    public void delete(GeneralConfig generalConfig){
+        GeneralConfigId generalConfigId=new GeneralConfigId();
+        generalConfigId.setConfigGroup(generalConfig.getConfigGroup());
+        generalConfigId.setGcKey(generalConfig.getKey());
+       generalConfigDAO.delete(generalConfigId);
+    }
 }

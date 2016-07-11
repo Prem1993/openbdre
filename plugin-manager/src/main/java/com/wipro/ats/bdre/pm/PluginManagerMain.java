@@ -4,6 +4,7 @@ import com.wipro.ats.bdre.exception.BDREException;
 import com.wipro.ats.bdre.md.api.InstalledPlugins;
 import com.wipro.ats.bdre.md.api.PluginDependency;
 import com.wipro.ats.bdre.md.pm.beans.Plugin;
+import com.wipro.ats.bdre.md.pm.beans.PluginConfig;
 import org.apache.log4j.Logger;
 
 
@@ -30,7 +31,9 @@ public class PluginManagerMain {
             if(installedPlugins1 != null){
                 throw new BDREException("plugin already installed");
             }
+            String pluginUniqueId;
             if(pluginDependencyResolver.dependencyCheck(plugin)){
+               pluginUniqueId = installedPlugins.insert(plugin.getPluginDetails());
                 PluginInstaller pluginInstaller = new PluginInstaller();
                 pluginInstaller.install(plugin,pluginDescriptorJSON);
             }else{
@@ -38,13 +41,19 @@ public class PluginManagerMain {
                 throw new Exception();
             }
             //adding plugin into INSTALLED_PLUGINS table to make an entry
-            String pluginUniqueId = installedPlugins.insert(plugin.getPluginDetails());
+
             // creating entries in PLUGIN_DEPENDENCY table related to installed plugin
             PluginDependency pluginDependency = new PluginDependency();
             pluginDependency.insert(plugin);
             // adding configuaration for installed plugin in PLUGIN_CONFIG table
+            PluginConfig pluginConfigBean=new PluginConfig();
+            pluginConfigBean.setConfigGroup("uninstall");
+            pluginConfigBean.setKey("expended jar location");
+            pluginConfigBean.setValue(pluginDescriptorJSON);
+            plugin.getPluginConfig().add(pluginConfigBean);
             com.wipro.ats.bdre.md.api.PluginConfig pluginConfig = new com.wipro.ats.bdre.md.api.PluginConfig();
             pluginConfig.insert(plugin.getPluginConfig(),pluginUniqueId);
+
         }
 
     }

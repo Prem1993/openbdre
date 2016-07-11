@@ -31,7 +31,6 @@ public class PluginConfigDAO {
         Session session = sessionFactory.openSession();
         session.beginTransaction();
         Criteria criteria = session.createCriteria(PluginConfig.class);
-
         LOGGER.info("number of entries in properties table" + criteria.list().size());
         criteria.setProjection(Projections.distinct(Projections.property("id.pluginUniqueId")));
         criteria.setFirstResult(pageNum);
@@ -140,7 +139,7 @@ public List<String> distinctPluginConfig(String configGroup)
 {
     Session session = sessionFactory.openSession();
     session.beginTransaction();
-    Criteria criteria = session.createCriteria(PluginConfig.class).setProjection(Projections.distinct(Projections.property("id.pluginUniqueId"))).add(Restrictions.like("configGroup","%"+configGroup));
+    Criteria criteria = session.createCriteria(PluginConfig.class).setProjection(Projections.distinct(Projections.property("id.pluginUniqueId"))).add(Restrictions.like("id.configGroup","%"+configGroup));
     List<String> pluginUniqueIdList = criteria.list();
     session.getTransaction().commit();
     session.close();
@@ -151,8 +150,8 @@ public List<String> getWithConfig(String pluginUniqueId,String configGroup)
 {
     Session session = sessionFactory.openSession();
     session.beginTransaction();
-    Criteria criteria = session.createCriteria(PluginConfig.class).add(Restrictions.eq("configGroup",configGroup)).
-            add(Restrictions.eq("id.pluginUniqueId",pluginUniqueId)).setProjection(Projections.property("pluginValue")).addOrder(Order.asc("id.pluginKey"));
+    Criteria criteria = session.createCriteria(PluginConfig.class).add(Restrictions.eq("id.configGroup",configGroup)).
+            add(Restrictions.eq("id.pluginUniqueId",pluginUniqueId)).setProjection(Projections.property("id.pluginValue")).addOrder(Order.asc("id.pluginKey"));
     List<String> pluginValuesList = criteria.list();
     session.getTransaction().commit();
     session.close();
@@ -163,9 +162,9 @@ public List<String> getWithConfig(String pluginUniqueId,String configGroup)
     {
         Session session = sessionFactory.openSession();
         session.beginTransaction();
-        Criteria criteria = session.createCriteria(PluginConfig.class).add(Restrictions.eq("configGroup",configGroup)).
+        Criteria criteria = session.createCriteria(PluginConfig.class).add(Restrictions.eq("id.configGroup",configGroup)).
                                                                        add(Restrictions.eq("id.pluginKey",key))
-                                                                       .setProjection(Projections.property("pluginValue"));
+                                                                       .setProjection(Projections.property("id.pluginValue"));
         List<String> pluginValuesList = criteria.list();
         session.getTransaction().commit();
         session.close();
@@ -176,11 +175,12 @@ public List<String> getWithConfig(String pluginUniqueId,String configGroup)
     {
         Session session = sessionFactory.openSession();
         session.beginTransaction();
-        Criteria criteria = session.createCriteria(PluginConfig.class).add(Restrictions.eq("configGroup",configGroup)).
+        Criteria criteria = session.createCriteria(PluginConfig.class).add(Restrictions.eq("id.configGroup",configGroup)).
                 add(Restrictions.eq("id.pluginUniqueId",pluginUniqueId)).setProjection(Projections.property("id.pluginKey")).addOrder(Order.asc("id.pluginKey"));
         List<String> pluginKeysList = criteria.list();
         session.getTransaction().commit();
         session.close();
         return pluginKeysList;
     }
+
 }

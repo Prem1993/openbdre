@@ -92,4 +92,26 @@ public class MetadataActions {
 
         }
     }
+
+    public void unInstallAction(DataList dataList){
+        if("PROCESS_TYPE".equals(dataList.getTableName())){
+            for(ArrayList data : dataList.getData()){
+                ProcessType processType1 = new ProcessType();
+                com.wipro.ats.bdre.md.beans.table.ProcessType processType = new com.wipro.ats.bdre.md.beans.table.ProcessType();
+                processType.setProcessTypeId(Integer.parseInt((String) data.get(0)));
+               processType1.delete(processType);
+               }
+
+        }else if("GENERAL_CONFIG".equals(dataList.getTableName())){
+            for(ArrayList data : dataList.getData()){
+                com.wipro.ats.bdre.md.beans.table.GeneralConfig generalConfig = new com.wipro.ats.bdre.md.beans.table.GeneralConfig();
+                generalConfig.setConfigGroup((String) data.get(0));
+                generalConfig.setKey((String) data.get(1));
+                GetGeneralConfig getGeneralConfig = new GetGeneralConfig();
+                getGeneralConfig.delete(generalConfig);
+            }
+
+        }
+    }
+
 }

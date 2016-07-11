@@ -56,5 +56,8 @@ public class InstalledPlugins extends MetadataAPIBase {
     public com.wipro.ats.bdre.md.dao.jpa.InstalledPlugins get(String pluginUniqueId){
                 return installedPluginsDAO.get(pluginUniqueId);
     }
+    public void delete(String pluginUniqueId){
+        installedPluginsDAO.delete(pluginUniqueId);
+    }
 
 }

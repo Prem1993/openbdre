@@ -1,5 +1,6 @@
 package com.wipro.ats.bdre.pm;
 
+import com.wipro.ats.bdre.md.pm.beans.PluginConfig;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -7,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by cloudera on 6/14/16.
@@ -14,7 +17,7 @@ import java.nio.file.StandardOpenOption;
 public class WarOperations {
     private static final Logger LOGGER = Logger.getLogger(PluginManagerMain.class);
 
-    public void listOfFiles(File file,File parent,String md,String localizationFile) throws IOException{
+    public void listOfFiles(File file,File parent,String md,String localizationFile,String pluginUniqueId) throws IOException{
         LOGGER.info("entering directory name : " + file.getName() + " The absolute location of dir is : " + file.getAbsolutePath());
         for(File file1 : file.listFiles()){
             if(file1.isDirectory()){
@@ -27,11 +30,20 @@ public class WarOperations {
                 }
                 if (!new File(webappPath).exists()){
                     new File(webappPath).mkdir();
+                    //todo CREATE AN ENTRY IN PLUGIN_CONFIG FOR CREATED DIRECTORY
+                    List<PluginConfig>  pluginConfigs=new ArrayList<>();
+                    PluginConfig pluginConfigBean=new PluginConfig();
+                    pluginConfigBean.setConfigGroup("directory");
+                    pluginConfigBean.setKey("folder location");
+                    pluginConfigBean.setValue(webappPath);
+                    pluginConfigs.add(pluginConfigBean);
+                    com.wipro.ats.bdre.md.api.PluginConfig pluginConfig = new com.wipro.ats.bdre.md.api.PluginConfig();
+                    pluginConfig.insert(pluginConfigs,pluginUniqueId);
                 }
                 if ("mdui".equals(md)) {
-                    listOfFiles(file1, parent,"mdui",localizationFile);
+                    listOfFiles(file1, parent,"mdui",localizationFile,pluginUniqueId);
                 }else{
-                    listOfFiles(file1, parent,"mdrest",localizationFile);
+                    listOfFiles(file1, parent,"mdrest",localizationFile,pluginUniqueId);
                 }
             }else{
                 String relativePath = file1.getAbsolutePath().replace(parent.getAbsolutePath() ,"");
@@ -100,6 +112,15 @@ public class WarOperations {
                         Path sourcePath = new File(file1.getAbsolutePath()).toPath();
                         try {
                             Files.copy(sourcePath, targetPath);
+                            //todo CREATE AN ENTRY IN PLUGIN_CONFIG FOR NEW FILE COPIED
+                            List<PluginConfig>  pluginConfigs=new ArrayList<>();
+                            PluginConfig pluginConfigBean=new PluginConfig();
+                            pluginConfigBean.setConfigGroup("file");
+                            pluginConfigBean.setKey("file location");
+                            pluginConfigBean.setValue(targetPath.toString());
+                            pluginConfigs.add(pluginConfigBean);
+                            com.wipro.ats.bdre.md.api.PluginConfig pluginConfig = new com.wipro.ats.bdre.md.api.PluginConfig();
+                            pluginConfig.insert(pluginConfigs,pluginUniqueId);
                         } catch (IOException io) {
                             LOGGER.error(io + " : " + io.getMessage());
                             throw io;

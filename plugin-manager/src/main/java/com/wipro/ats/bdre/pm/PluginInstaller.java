@@ -15,7 +15,7 @@ import java.io.IOException;
 public class PluginInstaller {
     private static final Logger LOGGER = Logger.getLogger(PluginManagerMain.class);
     public void install(Plugin plugin,String pluginDescriptorJSON) throws IOException{
-
+        String pluginUniqueId=plugin.getPluginDetails().getPluginId() + "-" + plugin.getPluginDetails().getVersion();
         for(FS fs : plugin.getInstall().getFs()){
 
             if("FILECOPY".equals(fs.getAction())){
@@ -58,7 +58,7 @@ public class PluginInstaller {
              }
              impotObject.unZipIt(warLocation, warLocation.substring(0, warLocation.lastIndexOf(".")));
 
-             warOperations.listOfFiles(folder, folder,"mdui",plugin.getInstall().getUiWar().getLocalizationFile());
+             warOperations.listOfFiles(folder, folder,"mdui",plugin.getInstall().getUiWar().getLocalizationFile(),pluginUniqueId);
          }
          if ( !plugin.getInstall().getRestWar().getLocation().isEmpty()){
         String restWarLocation = pluginDescriptorJSON + "/" + plugin.getInstall().getRestWar().getLocation();
@@ -67,7 +67,7 @@ public class PluginInstaller {
             folder.mkdir();
         }
         impotObject.unZipIt(restWarLocation, restWarLocation.substring(0, restWarLocation.lastIndexOf(".")));
-        warOperations.listOfFiles(folder,folder,"mdrest","78909fdds444tr#@$%");
+        warOperations.listOfFiles(folder,folder,"mdrest","78909fdds444tr#@$%",pluginUniqueId);
 
     }}
 }

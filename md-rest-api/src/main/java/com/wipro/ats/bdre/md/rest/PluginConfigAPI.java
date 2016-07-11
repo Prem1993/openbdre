@@ -57,7 +57,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
      * @param
      * @return restWrapper It contains a list of instances of Properties.
      */
-    @RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
+   /* @RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
 
 
     @ResponseBody
@@ -84,7 +84,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
-    }
+    }*/
 
     /**
      * This method calls proc ListProperties and fetches a list of records from properties table corresponding to
@@ -93,33 +93,48 @@ public class PluginConfigAPI extends MetadataAPIBase {
      * @param
      * @return restWrapper It contains list of instances of properties corresponding to processId passed.
      */
-    @RequestMapping(value = {"/{id}/"}, method = RequestMethod.GET)
-
-
+    @RequestMapping(value = {"","/"}, method = RequestMethod.GET)
     @ResponseBody
-    public RestWrapper list(@PathVariable("id") String pluginUniqueId, Principal principal) {
+    public RestWrapper list(@RequestParam(value = "page", defaultValue = "0") int startPage,
+                            @RequestParam(value = "size", defaultValue = "10") int pageSize,
+                            @ModelAttribute("pluginconfig") @Valid PluginConfig tablePluginConfig, BindingResult bindingResult, Principal principal) {
 
         RestWrapper restWrapper = null;
         try {
-            List<PluginConfig> getPluginConfigs = new ArrayList<PluginConfig>();
+            if(tablePluginConfig.getPluginUniqueId()!=null) {
+                List<PluginConfig> getPluginConfigs = new ArrayList<PluginConfig>();
+                List<com.wipro.ats.bdre.md.dao.jpa.PluginConfig> pluginConfigList = new ArrayList<com.wipro.ats.bdre.md.dao.jpa.PluginConfig>();
+                LOGGER.info(tablePluginConfig.getPluginUniqueId());
+                pluginConfigList = pluginConfigDAO.getConfigForPlugin(tablePluginConfig.getPluginUniqueId(), startPage, pageSize);
+                LOGGER.info("size of returned object is " + pluginConfigList.size());
+                Integer counter = pluginConfigList.size();
+                for (com.wipro.ats.bdre.md.dao.jpa.PluginConfig pluginConfig : pluginConfigList) {
+                    com.wipro.ats.bdre.md.beans.table.PluginConfig returnPluginConfig = new com.wipro.ats.bdre.md.beans.table.PluginConfig();
+                    returnPluginConfig.setPluginUniqueId(pluginConfig.getId().getPluginUniqueId());
+                    returnPluginConfig.setConfigGroup(pluginConfig.getId().getConfigGroup());
+                    returnPluginConfig.setPluginKey(pluginConfig.getId().getPluginKey());
+                    returnPluginConfig.setPluginValue(pluginConfig.getId().getPluginValue());
+                    returnPluginConfig.setCounter(counter);
+                    getPluginConfigs.add(returnPluginConfig);
+                }
 
-            List<com.wipro.ats.bdre.md.dao.jpa.PluginConfig> pluginConfigList=new ArrayList<com.wipro.ats.bdre.md.dao.jpa.PluginConfig>();
-            LOGGER.info(pluginUniqueId);
-            pluginConfigList=pluginConfigDAO.getConfigForPlugin(pluginUniqueId,0,10);
-            LOGGER.info("size of returned object is "+pluginConfigList.size());
-            Integer counter=pluginConfigList.size();
-            for (com.wipro.ats.bdre.md.dao.jpa.PluginConfig pluginConfig : pluginConfigList) {
-                com.wipro.ats.bdre.md.beans.table.PluginConfig returnPluginConfig = new com.wipro.ats.bdre.md.beans.table.PluginConfig();
-                returnPluginConfig.setPluginUniqueId(pluginConfig.getId().getPluginUniqueId());
-                returnPluginConfig.setConfigGroup(pluginConfig.getConfigGroup());
-                returnPluginConfig.setPluginKey(pluginConfig.getId().getPluginKey());
-                returnPluginConfig.setPluginValue(pluginConfig.getPluginValue());
-                returnPluginConfig.setCounter(counter);
-                getPluginConfigs.add(returnPluginConfig);
+                restWrapper = new RestWrapper(getPluginConfigs, RestWrapper.OK);
+                LOGGER.info("Record with ID:" + tablePluginConfig.getPluginUniqueId() + "selected from Plugin Config by User:" + principal.getName());
             }
+            else{
+                Integer counter=pluginConfigDAO.totalRecordCount();
+                List<PluginConfig> getPluginConfigs = new ArrayList<PluginConfig>();
+                for (String pluginUniqueId : pluginConfigDAO.list(startPage, pageSize)) {
+                    com.wipro.ats.bdre.md.beans.table.PluginConfig returnPluginConfig = new com.wipro.ats.bdre.md.beans.table.PluginConfig();
+                    returnPluginConfig.setPluginUniqueId(pluginUniqueId);
+                    returnPluginConfig.setCounter(counter);
+                    getPluginConfigs.add(returnPluginConfig);
+                }
 
-            restWrapper = new RestWrapper(getPluginConfigs, RestWrapper.OK);
-            LOGGER.info("Record with ID:" + pluginUniqueId + "selected from Plugin Config by User:" + principal.getName());
+
+                restWrapper = new RestWrapper(getPluginConfigs, RestWrapper.OK);
+                LOGGER.info("All records listed from Properties by User:" + principal.getName());
+            }
 
         } catch (MetadataException e) {
             LOGGER.error(e);
@@ -220,9 +235,9 @@ public class PluginConfigAPI extends MetadataAPIBase {
             PluginConfigId pluginConfigId = new PluginConfigId();
             pluginConfigId.setPluginKey(pluginConfig.getPluginKey());
             pluginConfigId.setPluginUniqueId(pluginConfig.getPluginUniqueId());
+            pluginConfigId.setPluginValue(pluginConfig.getPluginValue());
+            pluginConfigId.setConfigGroup(pluginConfig.getConfigGroup());
             updatePluginConfig.setId(pluginConfigId);
-            updatePluginConfig.setPluginValue(pluginConfig.getPluginValue());
-            updatePluginConfig.setConfigGroup(pluginConfig.getConfigGroup());
             InstalledPlugins installedPlugins=new InstalledPlugins();
             installedPlugins.setPluginUniqueId(pluginConfig.getPluginUniqueId());
             updatePluginConfig.setInstalledPlugins(installedPlugins);
@@ -266,9 +281,9 @@ public class PluginConfigAPI extends MetadataAPIBase {
             PluginConfigId pluginConfigId = new PluginConfigId();
             pluginConfigId.setPluginKey(pluginConfig.getPluginKey());
             pluginConfigId.setPluginUniqueId(pluginConfig.getPluginUniqueId());
+            pluginConfigId.setPluginValue(pluginConfig.getPluginValue());
+            pluginConfigId.setConfigGroup(pluginConfig.getConfigGroup());
             insertPluginConfig.setId(pluginConfigId);
-            insertPluginConfig.setPluginValue(pluginConfig.getPluginValue());
-            insertPluginConfig.setConfigGroup(pluginConfig.getConfigGroup());
             pluginConfigDAO.insert(insertPluginConfig);
             restWrapper = new RestWrapper(pluginConfig, RestWrapper.OK);
             LOGGER.info("Record with ID:" + pluginConfig.getPluginUniqueId() + " inserted in Properties by User:" + principal.getName() + pluginConfig);
