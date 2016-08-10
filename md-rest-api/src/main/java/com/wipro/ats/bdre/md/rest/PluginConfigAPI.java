@@ -22,15 +22,20 @@ import com.wipro.ats.bdre.md.dao.PluginConfigDAO;
 import com.wipro.ats.bdre.md.dao.jpa.InstalledPlugins;
 import com.wipro.ats.bdre.md.dao.jpa.PluginConfigId;
 import com.wipro.ats.bdre.md.dao.jpa.Process;
+import com.wipro.ats.bdre.md.plugins.PluginStore;
+import com.wipro.ats.bdre.md.plugins.PluginStoreJson;
+import com.wipro.ats.bdre.md.plugins.PluginValue;
 import com.wipro.ats.bdre.md.rest.util.BindingResultError;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.io.IOException;
+import java.io.*;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
@@ -317,12 +322,57 @@ public class PluginConfigAPI extends MetadataAPIBase {
 
 
 
+            String temp;
+            BufferedReader br = null;
+            String jsonfile="";
+            String homeDir = System.getProperty("user.home");
+            br = new BufferedReader(new FileReader(homeDir+"/pluginappstore/store.json"));
+            while ((temp=br.readLine()) != null) {
+                jsonfile=jsonfile+temp;
+            }
+            LOGGER.info("Plugin store is " + jsonfile);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            PluginStore pluginStore = mapper.readValue(jsonfile, PluginStore.class);
+            LOGGER.info("size of app catagory is "+pluginStore.getApplicationList().size());
+            PluginValue installedPlugin=new PluginValue();
+            for (PluginStoreJson pluginStoreJson:pluginStore.getApplicationList())
+            {
+                if (pluginStoreJson.getId().equals("available"))
+                {
+                    LOGGER.info("no of available plugins which is not installed yet  "+pluginStoreJson.getColumns().size());
+                    for (PluginValue pluginValue:pluginStoreJson.getColumns())
+                    {
+                       if(pluginValue.getPlugin_unique_id().equals(""))
+                       {
+                            installedPlugin=pluginValue;
+                            pluginStoreJson.getColumns().remove(pluginValue);
+                       }
+                    }
+                }
+            }
 
+            for (PluginStoreJson pluginStoreJson:pluginStore.getApplicationList())
+            {
+                if (pluginStoreJson.getId().equals("installed"))
+                {
+                    LOGGER.info("no of installed plugins before current plugin is installed "+pluginStoreJson.getColumns().size());
+                    pluginStoreJson.getColumns().add(installedPlugin);
+                    LOGGER.info("no of installed plugins after current plugin is installed "+pluginStoreJson.getColumns().size());
+                }
+            }
+            ObjectMapper mapper1 = new ObjectMapper();
+            FileWriter fileOut = new FileWriter(homeDir+"/pluginappstore/store.json");
+            LOGGER.info(fileOut);
+            mapper1.writeValue(new File(homeDir+"/bdreappstore/store.json"),pluginStore);
 
 
 
             restWrapper = new RestWrapper(null, RestWrapper.OK);
         } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }catch (IOException e) {
             LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
@@ -339,7 +389,10 @@ public class PluginConfigAPI extends MetadataAPIBase {
             return bindingResultError.errorMessage(bindingResult);
         }
         try {
+            //llUninstallPluginMain uninstallPluginMain=new UninstallPluginMain("");
             LOGGER.info("plugin unique id  is "+pluginUniqueId);
+
+
             restWrapper = new RestWrapper(null, RestWrapper.OK);
         } catch (MetadataException e) {
             LOGGER.error(e);
