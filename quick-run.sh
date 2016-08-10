@@ -11,4 +11,5 @@ java -jar md-rest-api/target/dependency/jetty-runner.jar  --port 28850 \
            md-ui/context.xml \
            analytic-ui/context.xml \
            md-rest-api/context.xml \
-           appstore-context.xml
+           appstore-context.xml \
+           plugin-context.xml

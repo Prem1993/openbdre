@@ -30,6 +30,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
@@ -293,6 +294,54 @@ public class PluginConfigAPI extends MetadataAPIBase {
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         catch (SecurityException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        return restWrapper;
+    }
+
+
+    @RequestMapping(value = {"/install", "/install/"}, method = RequestMethod.POST)
+    @ResponseBody
+    public RestWrapper importData(@ModelAttribute("fileString")
+                                  @Valid String gitUrl, BindingResult bindingResult, Principal principal) {
+        RestWrapper restWrapper = null;
+        if (bindingResult.hasErrors()) {
+            BindingResultError bindingResultError = new BindingResultError();
+            return bindingResultError.errorMessage(bindingResult);
+        }
+        try {
+            LOGGER.info("git hub url is "+gitUrl);
+
+
+
+
+
+
+
+
+
+            restWrapper = new RestWrapper(null, RestWrapper.OK);
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        return restWrapper;
+    }
+
+    @RequestMapping(value = {"/uninstall", "/uninstall/"}, method = RequestMethod.POST)
+    @ResponseBody
+    public RestWrapper unInstallPlugin(@ModelAttribute("fileString")
+                                  @Valid String pluginUniqueId, BindingResult bindingResult, Principal principal) {
+        RestWrapper restWrapper = null;
+        if (bindingResult.hasErrors()) {
+            BindingResultError bindingResultError = new BindingResultError();
+            return bindingResultError.errorMessage(bindingResult);
+        }
+        try {
+            LOGGER.info("plugin unique id  is "+pluginUniqueId);
+            restWrapper = new RestWrapper(null, RestWrapper.OK);
+        } catch (MetadataException e) {
             LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }

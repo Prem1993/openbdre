@@ -23,6 +23,7 @@ BDRE_CODE=`pwd`
 sudo service bdre stop
 cp -f -r bdre-scripts/$1/* $BDRE_HOME/bdre-scripts
 cp -f -r appstore-context.xml $BDRE_HOME/bdre-scripts
+cp -f -r plugin-context.xml $BDRE_HOME/bdre-scripts
 cp -f -r bdre-scripts/hql $BDRE_HOME/bdre-scripts
 
 codeDir=`pwd`
