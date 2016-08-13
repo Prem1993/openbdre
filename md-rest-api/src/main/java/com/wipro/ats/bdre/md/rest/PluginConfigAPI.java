@@ -14,6 +14,7 @@
 
 package com.wipro.ats.bdre.md.rest;
 
+import com.wipro.ats.bdre.MDConfig;
 import com.wipro.ats.bdre.exception.MetadataException;
 import com.wipro.ats.bdre.md.api.base.MetadataAPIBase;
 import com.wipro.ats.bdre.md.beans.table.PluginConfig;
@@ -317,7 +318,14 @@ public class PluginConfigAPI extends MetadataAPIBase {
         }
         try {
             LOGGER.info("git hub url is "+gitUrl);
-
+            ProcessBuilder pb = new ProcessBuilder(MDConfig.getProperty("deploy.script-path") + "/install-plugin.sh", gitUrl);
+            java.lang.Process p = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line = null;
+            while ((line = reader.readLine()) != null)
+            {
+                System.out.println(line);
+            }
 
 
 
