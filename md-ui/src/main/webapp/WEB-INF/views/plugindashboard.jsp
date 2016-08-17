@@ -103,7 +103,8 @@ body {
                                                 url : "/mdrest/pluginconfig/install",
                                                 type : "POST",
                                                 data : {
-                                                    'fileString' : location
+                                                    'fileString' : location,
+                                                     'id'        :pluginUniqueId
                                                 },
                                                 success : function(
                                                         getData) {
@@ -122,6 +123,7 @@ body {
                                                                         'click',
                                                                         '#ok',
                                                                         function(e) {
+                                                                             $window.location.reload();
                                                                             return false;
                                                                         });
                                                     }
@@ -137,7 +139,8 @@ body {
                                                                         'click',
                                                                         '#ok',
                                                                         function(e) {
-                                                                            return false;
+                                                                            $window.location.reload();
+                                                                             return false;
                                                                         });
                                                     }
                                                 }
@@ -147,7 +150,7 @@ body {
                         						   else
                                                       {
 
-                          $('#confirm')
+                          $('#uninstallconfirm')
                             .modal({
                                 backdrop : 'static',
                                 keyboard : false
@@ -156,7 +159,7 @@ body {
                                     'click',
                                     '#yes',
                                     function(e) {
-                                        $('#installing').modal({
+                                        $('#uninstalling').modal({
                                             backdrop : 'static',
                                             keyboard : false
                                         })
@@ -170,12 +173,12 @@ body {
                                                     },
                                                     success : function(
                                                             getData) {
-                                                        $('#installing')
+                                                        $('#uninstalling')
                                                                 .modal(
                                                                         'hide');
                                                         if (getData.Result == "OK") {
                                                             $(
-                                                                    '#div-dialog-warning')
+                                                                    '#div-dialog-warning-uninstall')
                                                                     .modal(
                                                                             {
                                                                                 backdrop : 'static',
@@ -185,12 +188,13 @@ body {
                                                                             'click',
                                                                             '#ok',
                                                                             function(e) {
+                                                                                 $window.location.reload();
                                                                                 return false;
                                                                             });
                                                         }
                                                         if (getData.Result == "ERROR") {
                                                             $(
-                                                                    '#div-dialog-error')
+                                                                    '#div-dialog-error-uninstall')
                                                                     .modal(
                                                                             {
                                                                                 backdrop : 'static',
@@ -200,6 +204,7 @@ body {
                                                                             'click',
                                                                             '#ok',
                                                                             function(e) {
+                                                                                $window.location.reload();
                                                                                 return false;
                                                                             });
                                                         }
@@ -248,6 +253,22 @@ body {
       </div>
     </div>
   </div>
+  <div class="modal fade" id="uninstallconfirm" role="dialog">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title"><spring:message code="appstore.page.uninstall"/></h4>
+          </div>
+          <div class="modal-body">
+            <p><spring:message code="appstore.page.p_confirmation-uninstall"/></p>
+          </div>
+          <div class="modal-footer">
+  			<button type="button" data-dismiss="modal" class="btn btn-primary" id="yes">Yes</button>
+      		<button type="button" data-dismiss="modal" class="btn">No</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="modal fade" id="installing" role="dialog">
       <div class="modal-dialog modal-sm">
         <div class="modal-content">
@@ -260,6 +281,18 @@ body {
         </div>
       </div>
     </div>
+    <div class="modal fade" id="uninstalling" role="dialog">
+          <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title"><spring:message code="appstore.page.uninstall"/></h4>
+              </div>
+              <div class="modal-body">
+                <p><spring:message code="appstore.page.uninstall_progress"/></p>
+              </div>
+            </div>
+          </div>
+        </div>
   <div class="modal fade" id="div-dialog-warning" role="dialog">
       <div class="modal-dialog modal-sm">
         <div class="modal-content">
@@ -275,6 +308,21 @@ body {
         </div>
       </div>
     </div>
+     <div class="modal fade" id="div-dialog-warning-uninstall" role="dialog">
+          <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title"><spring:message code="appstore.page.uninstall"/></h4>
+              </div>
+              <div class="modal-body">
+                <p><spring:message code="appstore.page.uninstall_complete"/></p>
+              </div>
+              <div class="modal-footer">
+      			<button type="button" data-dismiss="modal" class="btn btn-primary" id="ok">OK</button>
+              </div>
+            </div>
+          </div>
+        </div>
        <div class="modal fade" id="div-dialog-error" role="dialog">
           <div class="modal-dialog modal-sm">
             <div class="modal-content">
@@ -290,6 +338,21 @@ body {
             </div>
           </div>
        </div>
+       <div class="modal fade" id="div-dialog-error-uninstall" role="dialog">
+                 <div class="modal-dialog modal-sm">
+                   <div class="modal-content">
+                     <div class="modal-header">
+                       <h4 class="modal-title"><spring:message code="appstore.page.uninstall"/></h4>
+                     </div>
+                     <div class="modal-body">
+                       <p><spring:message code="appstore.page.uninstalltall_error"/></p>
+                     </div>
+                     <div class="modal-footer">
+             			<button type="button" data-dismiss="modal" class="btn btn-primary" id="ok">OK</button>
+                     </div>
+                   </div>
+                 </div>
+              </div>
 </div>
 </body>
 </html>

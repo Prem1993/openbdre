@@ -13,7 +13,7 @@ import java.util.List;
  * Created by cloudera on 6/6/16.
  */
 public class PluginConfig extends MetadataAPIBase {
-    private static final Logger LOGGER = Logger.getLogger(ProcessLog.class);
+    private static final Logger LOGGER = Logger.getLogger(PluginConfig.class);
 
     @Autowired
     PluginConfigDAO pluginConfigDAO;
