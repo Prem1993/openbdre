@@ -495,7 +495,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
         RestWrapper restWrapper = null;
         try {
 
-            String temp;
+            /*String temp;
             BufferedReader br = null;
             String jsonfile = "";
             String homeDir = System.getProperty("user.home");
@@ -521,7 +521,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                         installedPluginList.add(pluginValue);
                     }
                 }
-            }
+            }*/
 
 
             ProcessBuilder pb = new ProcessBuilder(MDConfig.getProperty("deploy.script-path") + "/refresh-plugin.sh");
@@ -541,7 +541,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 e.printStackTrace();
             }
             if (exitVal==0) {
-                String temp1;
+               /* String temp1;
                 BufferedReader br1 = null;
                 String jsonfile1 = "";
                 br1 = new BufferedReader(new FileReader(homeDir + "/pluginappstore/store.json"));
@@ -570,17 +570,22 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
                     if (pluginStoreJson.getId().equals("installed")) {
                         LOGGER.info("size of installed plugins in updated store json : "+pluginStoreJson.getColumns().size());
+                        List<PluginValue> storejsoninstalledlist=pluginStoreJson.getColumns();
                         Iterator<PluginValue> iterator = installedPluginList.iterator();
                         while (iterator.hasNext()) {
                             PluginValue pluginValue = iterator.next();
-                            if (!pluginStoreJson.getColumns().contains(pluginValue))
-                                pluginStoreJson.getColumns().add(pluginValue);
-                        }
+                            if(!storejsoninstalledlist.contains(pluginValue))
+                                storejsoninstalledlist.add(pluginValue);
 
+                        }
+                        pluginStoreJson.setColumns(storejsoninstalledlist);
+                        LOGGER.info("size of installed plugins in updated store json after adding installed plugins : "+pluginStoreJson.getColumns().size());
                         Set<PluginValue> pvalues = new HashSet<>();
                         pvalues.addAll(pluginStoreJson.getColumns());
+                        LOGGER.info("size of plugins in hashset : "+pvalues.size());
                         pluginStoreJson.getColumns().clear();
                         pluginStoreJson.getColumns().addAll(pvalues);
+                        LOGGER.info("size of plugins in after again adding to installed section : "+pluginStoreJson.getColumns().size());
                     }
                 }
 
@@ -588,7 +593,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 ObjectMapper mapper2 = new ObjectMapper();
                 FileWriter fileOut = new FileWriter(homeDir + "/pluginappstore/store.json");
                 LOGGER.info(fileOut);
-                mapper2.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);
+                mapper2.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);*/
                 restWrapper = new RestWrapper(null, RestWrapper.OK);
             }  else
             {
