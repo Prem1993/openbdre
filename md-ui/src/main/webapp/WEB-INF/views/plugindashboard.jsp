@@ -72,9 +72,57 @@ body {
 							return cssClass;
 						};
 
-						$scope.createApp = function(location) {
 
-						};
+                    $scope.refresh_available_plugins = function() {
+                       console.log("refreshing available plugins ......");
+                       $('#refreshing').modal({
+                                             backdrop : 'static',
+                                             keyboard : false
+                                         })
+
+                               $.ajax({
+                                           url : "/mdrest/pluginconfig/refresh",
+                                           type : "POST",
+
+                                           success : function( getData) {
+                                               $('#refreshing')
+                                                       .modal('hide');
+                                               if (getData.Result == "OK") {
+                                                   $('#div-dialog-warning-refresh')
+                                                           .modal({
+                                                                       backdrop : 'static',
+                                                                       keyboard : false
+                                                                   })
+                                                           .one(
+                                                                   'click',
+                                                                   '#ok',
+                                                                   function(e) {
+                                                                        $window.location.reload();
+                                                                       return false;
+                                                                   });
+                                               }
+                                               if (getData.Result == "ERROR") {
+                                                   $(
+                                                           '#div-dialog-error-refresh')
+                                                           .modal(
+                                                                   {
+                                                                       backdrop : 'static',
+                                                                       keyboard : false
+                                                                   })
+                                                           .one(
+                                                                   'click',
+                                                                   '#ok',
+                                                                   function(e) {
+                                                                       $window.location.reload();
+                                                                        return false;
+                                                                   });
+                                               }
+                                           }
+                                                 });
+
+
+                         						};
+
 
 
 						$scope.uninstallPlugin = function(pluginUniqueId) {
@@ -218,7 +266,7 @@ body {
 					});
 </script>
 <div ng-app="myApp" ng-controller="myCtrl">
-<div class="page-header">BDRE PLUGINS</div>
+<div class="page-header"><div class="pull-left">BDRE PLUGINS</div><div class="pull-right" ng-click="refresh_available_plugins()">REFRESH</div><div class="clearfix"></div></div>
 <ul class="nav nav-tabs" ng-if="rows">
   <li ng-repeat="row in rows" ng-class="addClass($first,'active')"><a data-toggle="tab" class='bdretab{{ row.id }}'>{{ row.name }}</a></li>
 </ul>
@@ -293,6 +341,18 @@ body {
             </div>
           </div>
         </div>
+         <div class="modal fade" id="refreshing" role="dialog">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h4 class="modal-title"><spring:message code="pluginstore.page.refresh"/></h4>
+                  </div>
+                  <div class="modal-body">
+                    <p><spring:message code="pluginstore.page.refresh_progress"/></p>
+                  </div>
+                </div>
+              </div>
+            </div>
   <div class="modal fade" id="div-dialog-warning" role="dialog">
       <div class="modal-dialog modal-sm">
         <div class="modal-content">
@@ -308,6 +368,21 @@ body {
         </div>
       </div>
     </div>
+    <div class="modal fade" id="div-dialog-warning-refresh" role="dialog">
+          <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title"><spring:message code="pluginstore.page.refresh"/></h4>
+              </div>
+              <div class="modal-body">
+                <p><spring:message code="pluginstore.page.refresh_complete"/></p>
+              </div>
+              <div class="modal-footer">
+      			<button type="button" data-dismiss="modal" class="btn btn-primary" id="ok">OK</button>
+              </div>
+            </div>
+          </div>
+        </div>
      <div class="modal fade" id="div-dialog-warning-uninstall" role="dialog">
           <div class="modal-dialog modal-sm">
             <div class="modal-content">
@@ -338,6 +413,21 @@ body {
             </div>
           </div>
        </div>
+       <div class="modal fade" id="div-dialog-error-refresh" role="dialog">
+                 <div class="modal-dialog modal-sm">
+                   <div class="modal-content">
+                     <div class="modal-header">
+                       <h4 class="modal-title"><spring:message code="pluginstore.page.refresh"/></h4>
+                     </div>
+                     <div class="modal-body">
+                       <p><spring:message code="pluginstore.page.refresh_error"/></p>
+                     </div>
+                     <div class="modal-footer">
+             			<button type="button" data-dismiss="modal" class="btn btn-primary" id="ok">OK</button>
+                     </div>
+                   </div>
+                 </div>
+              </div>
        <div class="modal fade" id="div-dialog-error-uninstall" role="dialog">
                  <div class="modal-dialog modal-sm">
                    <div class="modal-content">

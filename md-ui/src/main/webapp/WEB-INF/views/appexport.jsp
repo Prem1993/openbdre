@@ -104,7 +104,7 @@
 
                                             <div class="form-group">
                                                   <label ><spring:message code="appexport.page.upload_app_img"/></label>
-                                                  <input type="file" name="appImage" class="form-control" placeholder=<spring:message code="appexport.page.upload_app_img_placeholder"/>id="img-id" required>
+                                                  <input type="file" name="appImage" class="form-control" placeholder=<spring:message code="appexport.page.upload_app_img_placeholder"/>id="imgid" required>
 
                                             </div>
                                             <div class="form-group">
@@ -148,7 +148,8 @@
                                }
 
                                appstorePush =function (){
-                                  uploadImg(<%=processId %> ,'img-id');
+                                  console.log("in appstore push in process id"+<%=processId %>);
+                                  uploadImg(<%=processId %> ,"imgid");
                                    event.preventDefault();
                                 $.ajax({
                                      url: '/mdrest/adq/',
@@ -190,6 +191,7 @@
                                                  var uploadedFileName ="";
                                                  var imgstatus="";
                                                function uploadImg (subDir,fileId){
+                                               console.log("in file uploading");
                                               var arg= [subDir,fileId];
                                                 var fd = new FormData();
                                                		                var fileObj = $("#"+arg[1])[0].files[0];

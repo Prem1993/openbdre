@@ -38,9 +38,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.io.*;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by arijit on 1/9/15.
@@ -480,6 +478,122 @@ public class PluginConfigAPI extends MetadataAPIBase {
                restWrapper = new RestWrapper("error in uninstallation", RestWrapper.ERROR);
            }
 
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }catch (IOException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        return restWrapper;
+    }
+
+
+    @RequestMapping(value = {"/refresh", "/refresh/"}, method = RequestMethod.POST)
+    @ResponseBody
+    public RestWrapper refreshData() {
+        RestWrapper restWrapper = null;
+        try {
+
+            String temp;
+            BufferedReader br = null;
+            String jsonfile = "";
+            String homeDir = System.getProperty("user.home");
+            br = new BufferedReader(new FileReader(homeDir + "/pluginappstore/store.json"));
+            while ((temp = br.readLine()) != null) {
+                jsonfile = jsonfile + temp;
+            }
+            LOGGER.info("Plugin store is " + jsonfile);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            PluginStore pluginStore = mapper.readValue(jsonfile, PluginStore.class);
+            LOGGER.info("size of app catagory is " + pluginStore.getApplicationList().size());
+            List<PluginValue> installedPluginList=new ArrayList<>();
+            //PluginValue installedPlugin = new PluginValue();
+            for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
+                if (pluginStoreJson.getId().equals("installed")) {
+                    LOGGER.info("no of installed plugins " + pluginStoreJson.getColumns().size());
+                    // for (PluginValue pluginValue:pluginStoreJson.getColumns())
+                    Iterator<PluginValue> iterator = pluginStoreJson.getColumns().iterator();
+                    //for (Integer i=0;i<pluginStoreJson.getColumns().size();i++)
+                    while (iterator.hasNext()) {
+                        PluginValue pluginValue = iterator.next();
+                        installedPluginList.add(pluginValue);
+                    }
+                }
+            }
+
+
+            ProcessBuilder pb = new ProcessBuilder(MDConfig.getProperty("deploy.script-path") + "/refresh-plugin.sh");
+            java.lang.Process p = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line = null;
+            int exitVal=9;
+            while ((line = reader.readLine()) != null)
+            {
+                LOGGER.info(line);
+            }
+            reader.close();
+            try {
+                exitVal = p.waitFor();
+                LOGGER.info("Exit Value: " + exitVal);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if (exitVal==0) {
+                String temp1;
+                BufferedReader br1 = null;
+                String jsonfile1 = "";
+                br1 = new BufferedReader(new FileReader(homeDir + "/pluginappstore/store.json"));
+                while ((temp1 = br1.readLine()) != null) {
+                    jsonfile1 = jsonfile + temp1;
+                }
+                LOGGER.info("Plugin store is " + jsonfile1);
+                ObjectMapper mapper1 = new ObjectMapper();
+                mapper1.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                  pluginStore = mapper1.readValue(jsonfile1, PluginStore.class);
+                LOGGER.info("size of app catagory is " + pluginStore.getApplicationList().size());
+                for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
+                    if (pluginStoreJson.getId().equals("available")) {
+                        LOGGER.info("no of available plugins " + pluginStoreJson.getColumns().size());
+                        // for (PluginValue pluginValue:pluginStoreJson.getColumns())
+                        Iterator<PluginValue> iterator = pluginStoreJson.getColumns().iterator();
+                        //for (Integer i=0;i<pluginStoreJson.getColumns().size();i++)
+                        while (iterator.hasNext()) {
+                            PluginValue pluginValue = iterator.next();
+                            if (installedPluginList.contains(pluginValue))
+                                iterator.remove();
+                        }
+                    }
+                }
+                LOGGER.info("size of installed plugins : "+installedPluginList.size());
+                for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
+                    if (pluginStoreJson.getId().equals("installed")) {
+                        LOGGER.info("size of installed plugins in updated store json : "+pluginStoreJson.getColumns().size());
+                        Iterator<PluginValue> iterator = installedPluginList.iterator();
+                        while (iterator.hasNext()) {
+                            PluginValue pluginValue = iterator.next();
+                            if (!pluginStoreJson.getColumns().contains(pluginValue))
+                                pluginStoreJson.getColumns().add(pluginValue);
+                        }
+
+                        Set<PluginValue> pvalues = new HashSet<>();
+                        pvalues.addAll(pluginStoreJson.getColumns());
+                        pluginStoreJson.getColumns().clear();
+                        pluginStoreJson.getColumns().addAll(pvalues);
+                    }
+                }
+
+
+                ObjectMapper mapper2 = new ObjectMapper();
+                FileWriter fileOut = new FileWriter(homeDir + "/pluginappstore/store.json");
+                LOGGER.info(fileOut);
+                mapper2.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);
+                restWrapper = new RestWrapper(null, RestWrapper.OK);
+            }  else
+            {
+                restWrapper = new RestWrapper("error in refreshing", RestWrapper.ERROR);
+            }
         } catch (MetadataException e) {
             LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);

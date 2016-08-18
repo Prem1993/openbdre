@@ -376,7 +376,17 @@
                                                          "collapse": "1",
                                                          "url": "acq.page",
                                                          "children": []
-                                                     }]};
+                                                     }, {
+                                                       "label": "Installed Plugins",
+                                                       "collapse": "1",
+                                                       "url": "installedplugins.page",
+                                                       "children": []
+                                                   }, {
+                                                       "label": "Plugin Config",
+                                                       "collapse": "1",
+                                                       "url": "pluginconfig.page",
+                                                       "children": []
+                                                   }]};
                                     var jobManagement =  {
                                                		"label": "Job Management",
                                                		"collapse": "1",
@@ -410,7 +420,12 @@
                                                			"collapse": "1",
                                                			"url": "appstore.page",
                                                			"children": []
-                                               		}]
+                                               		}, {
+                                                        "label": "Plugin Store",
+                                                        "collapse": "1",
+                                                        "url": "plugindashboard.page",
+                                                        "children": []
+                                                    }]
                                                	};
 
 
