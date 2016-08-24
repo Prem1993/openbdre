@@ -277,7 +277,7 @@ body {
     	<div class="col-md-2 appimage" ng-repeat="column in row.columns">
 		<div class="alert alert-info thumbnail">
 			<div class="text-center"><strong>{{column.name}}</strong></div>
-			<img src="../../store/{{ column.icon }}" alt="App image" width="150" height="118">
+			<img src="../../pluginstore/{{ column.icon }}" alt="App image" width="150" height="118">
 			<button class="btn btn-info ng-binding center-block" ng-click="plugin(column.location,column.plugin_unique_id,row.id)">{{ row.id == 'available' ? 'Install' : 'Uninstall' }}</button>
 		</div>
 	</div>

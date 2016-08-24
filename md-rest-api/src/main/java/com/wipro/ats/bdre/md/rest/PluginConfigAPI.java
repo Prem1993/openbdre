@@ -356,9 +356,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
                     if (pluginStoreJson.getId().equals("available")) {
                         LOGGER.info("no of available plugins which is not installed yet  " + pluginStoreJson.getColumns().size());
-                        // for (PluginValue pluginValue:pluginStoreJson.getColumns())
                         Iterator<PluginValue> iterator = pluginStoreJson.getColumns().iterator();
-                        //for (Integer i=0;i<pluginStoreJson.getColumns().size();i++)
                         while (iterator.hasNext()) {
                             PluginValue pluginValue = iterator.next();
                             if (pluginValue.getPlugin_unique_id().equals(pluginUniqueId)) {
@@ -383,7 +381,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 FileWriter fileOut = new FileWriter(homeDir + "/pluginappstore/store.json");
                 LOGGER.info(fileOut);
                 mapper1.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);
-                restWrapper = new RestWrapper(null, RestWrapper.OK);
+                restWrapper = new RestWrapper("success", RestWrapper.OK);
             }  else
             {
                 restWrapper = new RestWrapper("error in uninstallation", RestWrapper.ERROR);
@@ -408,7 +406,6 @@ public class PluginConfigAPI extends MetadataAPIBase {
             return bindingResultError.errorMessage(bindingResult);
         }
         try {
-            //llUninstallPluginMain uninstallPluginMain=new UninstallPluginMain("");
             LOGGER.info("plugin unique id  is "+pluginUniqueId);
             ProcessBuilder pb = new ProcessBuilder(MDConfig.getProperty("deploy.script-path") + "/uninstall-plugin.sh", pluginUniqueId);
             java.lang.Process p = pb.start();
@@ -444,9 +441,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
                    if (pluginStoreJson.getId().equals("installed")) {
                        LOGGER.info("no of installed plugins which is not installed yet  " + pluginStoreJson.getColumns().size());
-                       // for (PluginValue pluginValue:pluginStoreJson.getColumns())
                        Iterator<PluginValue> iterator = pluginStoreJson.getColumns().iterator();
-                       //for (Integer i=0;i<pluginStoreJson.getColumns().size();i++)
                        while (iterator.hasNext()) {
                            PluginValue pluginValue = iterator.next();
                            if (pluginValue.getPlugin_unique_id().equals(pluginUniqueId)) {
@@ -471,7 +466,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                FileWriter fileOut = new FileWriter(homeDir + "/pluginappstore/store.json");
                LOGGER.info(fileOut);
                mapper1.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);
-               restWrapper = new RestWrapper(null, RestWrapper.OK);
+               restWrapper = new RestWrapper("success", RestWrapper.OK);
            }
             else
            {
@@ -494,36 +489,6 @@ public class PluginConfigAPI extends MetadataAPIBase {
     public RestWrapper refreshData() {
         RestWrapper restWrapper = null;
         try {
-
-            /*String temp;
-            BufferedReader br = null;
-            String jsonfile = "";
-            String homeDir = System.getProperty("user.home");
-            br = new BufferedReader(new FileReader(homeDir + "/pluginappstore/store.json"));
-            while ((temp = br.readLine()) != null) {
-                jsonfile = jsonfile + temp;
-            }
-            LOGGER.info("Plugin store is " + jsonfile);
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            PluginStore pluginStore = mapper.readValue(jsonfile, PluginStore.class);
-            LOGGER.info("size of app catagory is " + pluginStore.getApplicationList().size());
-            List<PluginValue> installedPluginList=new ArrayList<>();
-            //PluginValue installedPlugin = new PluginValue();
-            for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
-                if (pluginStoreJson.getId().equals("installed")) {
-                    LOGGER.info("no of installed plugins " + pluginStoreJson.getColumns().size());
-                    // for (PluginValue pluginValue:pluginStoreJson.getColumns())
-                    Iterator<PluginValue> iterator = pluginStoreJson.getColumns().iterator();
-                    //for (Integer i=0;i<pluginStoreJson.getColumns().size();i++)
-                    while (iterator.hasNext()) {
-                        PluginValue pluginValue = iterator.next();
-                        installedPluginList.add(pluginValue);
-                    }
-                }
-            }*/
-
-
             ProcessBuilder pb = new ProcessBuilder(MDConfig.getProperty("deploy.script-path") + "/refresh-plugin.sh");
             java.lang.Process p = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -541,60 +506,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 e.printStackTrace();
             }
             if (exitVal==0) {
-               /* String temp1;
-                BufferedReader br1 = null;
-                String jsonfile1 = "";
-                br1 = new BufferedReader(new FileReader(homeDir + "/pluginappstore/store.json"));
-                while ((temp1 = br1.readLine()) != null) {
-                    jsonfile1 = jsonfile + temp1;
-                }
-                LOGGER.info("Plugin store is " + jsonfile1);
-                ObjectMapper mapper1 = new ObjectMapper();
-                mapper1.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                  pluginStore = mapper1.readValue(jsonfile1, PluginStore.class);
-                LOGGER.info("size of app catagory is " + pluginStore.getApplicationList().size());
-                for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
-                    if (pluginStoreJson.getId().equals("available")) {
-                        LOGGER.info("no of available plugins " + pluginStoreJson.getColumns().size());
-                        // for (PluginValue pluginValue:pluginStoreJson.getColumns())
-                        Iterator<PluginValue> iterator = pluginStoreJson.getColumns().iterator();
-                        //for (Integer i=0;i<pluginStoreJson.getColumns().size();i++)
-                        while (iterator.hasNext()) {
-                            PluginValue pluginValue = iterator.next();
-                            if (installedPluginList.contains(pluginValue))
-                                iterator.remove();
-                        }
-                    }
-                }
-                LOGGER.info("size of installed plugins : "+installedPluginList.size());
-                for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
-                    if (pluginStoreJson.getId().equals("installed")) {
-                        LOGGER.info("size of installed plugins in updated store json : "+pluginStoreJson.getColumns().size());
-                        List<PluginValue> storejsoninstalledlist=pluginStoreJson.getColumns();
-                        Iterator<PluginValue> iterator = installedPluginList.iterator();
-                        while (iterator.hasNext()) {
-                            PluginValue pluginValue = iterator.next();
-                            if(!storejsoninstalledlist.contains(pluginValue))
-                                storejsoninstalledlist.add(pluginValue);
-
-                        }
-                        pluginStoreJson.setColumns(storejsoninstalledlist);
-                        LOGGER.info("size of installed plugins in updated store json after adding installed plugins : "+pluginStoreJson.getColumns().size());
-                        Set<PluginValue> pvalues = new HashSet<>();
-                        pvalues.addAll(pluginStoreJson.getColumns());
-                        LOGGER.info("size of plugins in hashset : "+pvalues.size());
-                        pluginStoreJson.getColumns().clear();
-                        pluginStoreJson.getColumns().addAll(pvalues);
-                        LOGGER.info("size of plugins in after again adding to installed section : "+pluginStoreJson.getColumns().size());
-                    }
-                }
-
-
-                ObjectMapper mapper2 = new ObjectMapper();
-                FileWriter fileOut = new FileWriter(homeDir + "/pluginappstore/store.json");
-                LOGGER.info(fileOut);
-                mapper2.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);*/
-                restWrapper = new RestWrapper(null, RestWrapper.OK);
+                restWrapper = new RestWrapper("success", RestWrapper.OK);
             }  else
             {
                 restWrapper = new RestWrapper("error in refreshing", RestWrapper.ERROR);
