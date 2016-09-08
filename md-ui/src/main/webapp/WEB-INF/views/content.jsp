@@ -386,7 +386,12 @@
                                                        "collapse": "1",
                                                        "url": "pluginconfig.page",
                                                        "children": []
-                                                   }]};
+                                                   }, {
+                                                           "label": "Plugin Dependency",
+                                                           "collapse": "1",
+                                                           "url": "plugindependency.page",
+                                                           "children": []
+                                                       }]};
                                     var jobManagement =  {
                                                		"label": "Job Management",
                                                		"collapse": "1",
