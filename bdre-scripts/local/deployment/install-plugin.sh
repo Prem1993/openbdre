@@ -2,7 +2,7 @@
 . $(dirname $0)/../env.properties
 BDRE_HOME=~/bdre
 BDRE_APPS_HOME=~/bdre_apps
-PLUGIN_HOME=~/pluginappstore
+PLUGIN_HOME=~/BDREPluginStore
 INSTALLED_PLUGIN_HOME=~/bdreplugins
 echo $mavenPath
 export PATH=$PATH:$mavenPath

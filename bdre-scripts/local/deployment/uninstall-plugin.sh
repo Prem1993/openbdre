@@ -1,2 +1,4 @@
 #creating uninstall plugin command for
-java -cp "/home/cloudera/bdre/lib/plugin-manager/*" com.wipro.ats.bdre.pm.UninstallPluginMain R-Action-1.0.0
+pluginUniqueId=$1
+echo $pluginUniqueId
+java -cp "/home/cloudera/bdre/lib/plugin-manager/*" com.wipro.ats.bdre.pm.UninstallPluginMain $pluginUniqueId

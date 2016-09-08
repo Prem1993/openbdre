@@ -16,7 +16,7 @@ import java.io.IOException;
  */
 public class PluginDescriptorReader{
 
-    private static final Logger LOGGER = Logger.getLogger(PluginManagerMain.class);
+    private static final Logger LOGGER = Logger.getLogger(PluginDescriptorReader.class);
 
     public Plugin jsonReader(String jsonFilePath) throws IOException {
         Plugin plugin = new Plugin();

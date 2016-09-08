@@ -55,6 +55,6 @@ public class PluginDependency extends MetadataAPIBase {
     }
     public void deleteByPluginUniqueId(String pluginUniqueId)
     {
-
+       pluginDependencyDAO.deleteByPluginUniqueId(pluginUniqueId);
     }
 }

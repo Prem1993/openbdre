@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
  */
 public class UninstallPluginMain {
 
-    private static final Logger LOGGER = Logger.getLogger(PluginManagerMain.class);
+    private static final Logger LOGGER = Logger.getLogger(UninstallPluginMain.class);
     public static void main(String[] args) throws Exception {
         String pluginDescriptorJSON = "";
             String pluginUniqueID=args[0];

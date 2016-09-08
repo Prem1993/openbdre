@@ -343,7 +343,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 BufferedReader br = null;
                 String jsonfile = "";
                 String homeDir = System.getProperty("user.home");
-                br = new BufferedReader(new FileReader(homeDir + "/pluginappstore/store.json"));
+                br = new BufferedReader(new FileReader(homeDir + "/BDREPluginStore/store.json"));
                 while ((temp = br.readLine()) != null) {
                     jsonfile = jsonfile + temp;
                 }
@@ -378,9 +378,9 @@ public class PluginConfigAPI extends MetadataAPIBase {
                     }
                 }
                 ObjectMapper mapper1 = new ObjectMapper();
-                FileWriter fileOut = new FileWriter(homeDir + "/pluginappstore/store.json");
+                FileWriter fileOut = new FileWriter(homeDir + "/BDREPluginStore/store.json");
                 LOGGER.info(fileOut);
-                mapper1.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);
+                mapper1.writeValue(new File(homeDir + "/BDREPluginStore/store.json"), pluginStore);
                 restWrapper = new RestWrapper("success", RestWrapper.OK);
             }  else
             {
@@ -428,7 +428,7 @@ public class PluginConfigAPI extends MetadataAPIBase {
                BufferedReader br = null;
                String jsonfile = "";
                String homeDir = System.getProperty("user.home");
-               br = new BufferedReader(new FileReader(homeDir + "/pluginappstore/store.json"));
+               br = new BufferedReader(new FileReader(homeDir + "/BDREPluginStore/store.json"));
                while ((temp = br.readLine()) != null) {
                    jsonfile = jsonfile + temp;
                }
@@ -463,9 +463,9 @@ public class PluginConfigAPI extends MetadataAPIBase {
                    }
                }
                ObjectMapper mapper1 = new ObjectMapper();
-               FileWriter fileOut = new FileWriter(homeDir + "/pluginappstore/store.json");
+               FileWriter fileOut = new FileWriter(homeDir + "/BDREPluginStore/store.json");
                LOGGER.info(fileOut);
-               mapper1.writeValue(new File(homeDir + "/pluginappstore/store.json"), pluginStore);
+               mapper1.writeValue(new File(homeDir + "/BDREPluginStore/store.json"), pluginStore);
                restWrapper = new RestWrapper("success", RestWrapper.OK);
            }
             else

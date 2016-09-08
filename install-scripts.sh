@@ -107,3 +107,4 @@ sudo ln -s `which java` /usr/sbin/java
 
 cd $BDRE_CODE
 sh appstore.sh
+sh pluginstore.sh
