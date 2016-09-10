@@ -5,7 +5,7 @@ BDRE_PLUGINSTORE_REPO=~/BDREPluginStore
 #Pull latest plugins from the repo
 if [ -d "$BDRE_PLUGINSTORE_REPO" ]; then
     echo "refresing repo"
-    cd BDRE_PLUGINSTORE_REPO
+    cd $BDRE_PLUGINSTORE_REPO
     git pull origin  master
     if [ $? -ne 0 ]
         then exit 1
