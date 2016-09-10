@@ -56,42 +56,6 @@ public class PluginConfigAPI extends MetadataAPIBase {
     @Autowired
     private InstalledPluginsDAO installedPluginsDAO;
 
-
-    /**
-     * This method calls proc ListProperty and fetches a list of instances of Properties.
-     *
-     * @param
-     * @return restWrapper It contains a list of instances of Properties.
-     */
-   /* @RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
-
-
-    @ResponseBody
-    public RestWrapper list(@RequestParam(value = "page", defaultValue = "0") int startPage,
-                            @RequestParam(value = "size", defaultValue = "10") int pageSize, Principal principal) {
-
-        RestWrapper restWrapper = null;
-        try {
-            Integer counter=pluginConfigDAO.totalRecordCount();
-            List<PluginConfig> getPluginConfigs = new ArrayList<PluginConfig>();
-            for (String pluginUniqueId : pluginConfigDAO.list(startPage, pageSize)) {
-                com.wipro.ats.bdre.md.beans.table.PluginConfig returnPluginConfig = new com.wipro.ats.bdre.md.beans.table.PluginConfig();
-                returnPluginConfig.setPluginUniqueId(pluginUniqueId);
-                returnPluginConfig.setCounter(counter);
-                getPluginConfigs.add(returnPluginConfig);
-            }
-
-
-            restWrapper = new RestWrapper(getPluginConfigs, RestWrapper.OK);
-            LOGGER.info("All records listed from Properties by User:" + principal.getName());
-
-        } catch (MetadataException e) {
-            LOGGER.error(e);
-            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
-        }
-        return restWrapper;
-    }*/
-
     /**
      * This method calls proc ListProperties and fetches a list of records from properties table corresponding to
      * processId passed.
@@ -506,6 +470,49 @@ public class PluginConfigAPI extends MetadataAPIBase {
                 e.printStackTrace();
             }
             if (exitVal==0) {
+                List<String> installedPluginUniqueIdList=installedPluginsDAO.installedPluginUniqueIdList();
+                LOGGER.info("installed plugins are "+installedPluginUniqueIdList.toString());
+                String temp;
+                BufferedReader br = null;
+                String jsonfile = "";
+                String homeDir = System.getProperty("user.home");
+                br = new BufferedReader(new FileReader(homeDir + "/BDREPluginStore/store.json"));
+                while ((temp = br.readLine()) != null) {
+                    jsonfile = jsonfile + temp;
+                }
+                LOGGER.info("Plugin store is " + jsonfile);
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                PluginStore pluginStore = mapper.readValue(jsonfile, PluginStore.class);
+                List<PluginValue> installedPluginList=new ArrayList<>();
+                for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
+                    if (pluginStoreJson.getId().equals("available")) {
+                        LOGGER.info("no of available which in the updated plugin dashboard  " + pluginStoreJson.getColumns().size());
+                        Iterator<PluginValue> iterator = pluginStoreJson.getColumns().iterator();
+                        while (iterator.hasNext()) {
+                            PluginValue pluginValue = iterator.next();
+                            if (installedPluginUniqueIdList.contains(pluginValue.getPlugin_unique_id())) {
+                                installedPluginList.add(pluginValue);
+                                iterator.remove();
+                            }
+                        }
+                        LOGGER.info("no of uninstalled plugins "+pluginStoreJson.getColumns().size());
+                        LOGGER.info("no of installed plugins "+installedPluginList.size());
+                    }
+                }
+
+                for (PluginStoreJson pluginStoreJson : pluginStore.getApplicationList()) {
+                    if (pluginStoreJson.getId().equals("installed")) {
+                        LOGGER.info("no of installed  in the updated plugin dashboard before adding the pluginvaluelist " + pluginStoreJson.getColumns().size());
+                        pluginStoreJson.getColumns().addAll(installedPluginList);
+                        LOGGER.info("no of installed plugins after adding the pluginvaluelist "+pluginStoreJson.getColumns().size());
+
+                    }
+                }
+                ObjectMapper mapper1 = new ObjectMapper();
+                FileWriter fileOut = new FileWriter(homeDir + "/BDREPluginStore/store.json");
+                LOGGER.info(fileOut);
+                mapper1.writeValue(new File(homeDir + "/BDREPluginStore/store.json"), pluginStore);
                 restWrapper = new RestWrapper("success", RestWrapper.OK);
             }  else
             {

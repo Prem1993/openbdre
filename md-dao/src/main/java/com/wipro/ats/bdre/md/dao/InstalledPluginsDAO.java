@@ -10,10 +10,12 @@ import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Projections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 @Transactional
 @Service
@@ -96,5 +98,22 @@ public class InstalledPluginsDAO {
         } finally {
             session.close();
         }
+    }
+    public List<String> installedPluginUniqueIdList()
+    {
+        Session session = sessionFactory.openSession();
+        List<String> pluginUniqueIdList=new ArrayList<>();
+        try {
+            session.beginTransaction();
+            Criteria criteria = session.createCriteria(InstalledPlugins.class).setProjection(Projections.property("pluginUniqueId"));
+            pluginUniqueIdList=criteria.list();
+            session.getTransaction().commit();
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return pluginUniqueIdList;
     }
 }
