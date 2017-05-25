@@ -394,6 +394,8 @@ wizard = $(document).ready(function() {
                                                 </select>
                                             </div>
                                         </div>
+
+
                                         <div class="clearfix"></div>
                                         </div>
 
