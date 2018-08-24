@@ -24,6 +24,10 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+
 /**
  * Created by PR324290 on 10/28/2015.
  */
@@ -42,11 +46,13 @@ public class UsersDAOTest {
     @Autowired
     UsersDAO usersDAO;
 
+    @Ignore
     @Test
     public void testList() throws Exception {
         LOGGER.info("Size of Users is atleast:" + usersDAO.list(0, 10).size());
     }
 
+    @Ignore
     @Test
     public void testTotalRecordCount() throws Exception {
         LOGGER.info("Size of Users is:" + usersDAO.totalRecordCount());
@@ -60,7 +66,7 @@ public class UsersDAOTest {
         LOGGER.info("Users(0) passwd:" + usersDAO.get("admin").getUsername());
     }
 
-
+    @Ignore
     @Test
     public void testInsertUpdateAndDelete() throws Exception {
         Users users = new Users();
@@ -73,8 +79,15 @@ public class UsersDAOTest {
         users.setPassword("Test_updated");
         usersDAO.update(users);
         users = usersDAO.get(usersId);
+        assertEquals("Test_updated",users.getPassword());
         LOGGER.info("Updated users with passwd:" + users.getPassword());
+        assertNotNull(usersDAO.list(0,10));
         usersDAO.delete(usersId);
         LOGGER.info("Users Deleted with ID:" + usersId);
+        LOGGER.info("Size of Users is:" + usersDAO.totalRecordCount());
+
     }
+
+
+
 }

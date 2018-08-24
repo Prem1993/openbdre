@@ -19,14 +19,12 @@ package com.wipro.ats.bdre.imcrawler.frontier;
 
 import com.wipro.ats.bdre.imcrawler.crawler.Configurable;
 import com.wipro.ats.bdre.imcrawler.crawler.CrawlConfig;
-import com.wipro.ats.bdre.imcrawler.jpa.Docidsdb;
+import com.wipro.ats.bdre.md.dao.jpa.Docidsdb;
 import com.wipro.ats.bdre.imcrawler.model.DocidsDBDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.util.List;
 
@@ -46,8 +44,7 @@ public class DocIDServer extends Configurable {
     public DocIDServer(CrawlConfig config) {
         super(config);
         /*Hibernate Auto-wire*/
-        ApplicationContext context = new ClassPathXmlApplicationContext("spring-dao.xml");
-        AutowireCapableBeanFactory acbFactory = context.getAutowireCapableBeanFactory();
+        AutowireCapableBeanFactory acbFactory = getAutowireCapableBeanFactory();
         acbFactory.autowireBean(this);
 
         if (config.isResumableCrawling()) {
@@ -80,7 +77,7 @@ public class DocIDServer extends Configurable {
                 for (Docidsdb info:docidsdbList) {
 //                    Docidsdb info = docidsDBDao.get(i);
                     if (info.getUrl().equals(url)) {
-                        return info.getDocId();
+                        return info.getDocid().intValue();
                     }
                 }
 //                }
@@ -179,7 +176,7 @@ public class DocIDServer extends Configurable {
         Integer intTotalSize = new Integer(totalSize.intValue());
         int tobereturnedDocId;
         if (totalSize > 0) {
-            tobereturnedDocId = docidsDBDao.getLastElement().getDocId();
+            tobereturnedDocId = docidsDBDao.getLastElement().getDocid().intValue();
         } else {
             tobereturnedDocId = -1;
         }

@@ -14,17 +14,19 @@
 
 package com.wipro.ats.bdre.md.rest;
 
+import com.wipro.ats.bdre.exception.MetadataException;
 import com.wipro.ats.bdre.md.api.base.MetadataAPIBase;
 import com.wipro.ats.bdre.md.beans.table.Properties;
+import com.wipro.ats.bdre.md.dao.ProcessDAO;
 import com.wipro.ats.bdre.md.dao.PropertiesDAO;
 import com.wipro.ats.bdre.md.dao.jpa.Process;
 import com.wipro.ats.bdre.md.dao.jpa.PropertiesId;
+import com.wipro.ats.bdre.md.rest.util.BindingResultError;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
+
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -41,36 +43,41 @@ import java.util.List;
 
 public class PropertiesAPI extends MetadataAPIBase {
     private static final Logger LOGGER = Logger.getLogger(PropertiesAPI.class);
+    private static final String WRITE="write";
+
     @Autowired
     private PropertiesDAO propertiesDAO;
-
+    @Autowired
+    private ProcessDAO processDAO;
     /**
      * This method calls proc DeleteProperties and deletes  records from Properties table
      * corresponding to processId passed.
      *
      * @param processId
-     * @param model
      * @return nothing.
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-    public
-    @ResponseBody
-    RestWrapper delete(@PathVariable("id") Integer processId,
-                       ModelMap model, Principal principal) {
 
+    @ResponseBody
+    public RestWrapper delete(@PathVariable("id") Integer processId, Principal principal) {
         RestWrapper restWrapper = null;
         try {
-
-
-            com.wipro.ats.bdre.md.dao.jpa.Process process = new Process();
+            Process parentProcess=processDAO.get(processId);
+            if (parentProcess.getProcess()!=null)
+                  processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),WRITE);
+            else
+               processDAO.securityCheck(processId,principal.getName(),WRITE);
+                    com.wipro.ats.bdre.md.dao.jpa.Process process = new Process();
             process.setProcessId(processId);
             propertiesDAO.deleteByProcessId(process);
-            //s.delete("call_procedures.DeleteProperties", properties);
-
             restWrapper = new RestWrapper(null, RestWrapper.OK);
             LOGGER.info("Record with ID:" + processId + " deleted from Properties by User:" + principal.getName());
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -84,17 +91,15 @@ public class PropertiesAPI extends MetadataAPIBase {
      */
     @RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
 
-    public
+
     @ResponseBody
-    RestWrapper list(@RequestParam(value = "page", defaultValue = "0") int startPage,
+    public RestWrapper list(@RequestParam(value = "page", defaultValue = "0") int startPage,
                      @RequestParam(value = "size", defaultValue = "10") int pageSize, Principal principal) {
 
         RestWrapper restWrapper = null;
         try {
             Integer counter=propertiesDAO.totalRecordCount();
             List<Properties> getProperties = new ArrayList<Properties>();
-            //List<Properties> getProperties = s.selectList("call_procedures.ListProperty", properties);
-
             for (Integer processId : propertiesDAO.list(startPage, pageSize)) {
                 com.wipro.ats.bdre.md.beans.table.Properties returnProperties = new com.wipro.ats.bdre.md.beans.table.Properties();
                 returnProperties.setProcessId(processId);
@@ -106,7 +111,8 @@ public class PropertiesAPI extends MetadataAPIBase {
             restWrapper = new RestWrapper(getProperties, RestWrapper.OK);
             LOGGER.info("All records listed from Properties by User:" + principal.getName());
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -117,33 +123,35 @@ public class PropertiesAPI extends MetadataAPIBase {
      *
      * @param processId
      * @param key
-     * @param model
      * @return nothing.
      */
-    @RequestMapping(value = "/{id}/{k}", method = RequestMethod.DELETE)
-    public
+    @RequestMapping(value = "/{id}/{k}/", method = RequestMethod.DELETE)
+
     @ResponseBody
-    RestWrapper delete(
+    public RestWrapper delete(
             @PathVariable("id") Integer processId,
-            @PathVariable("k") String key,
-            ModelMap model, Principal principal) {
+            @PathVariable("k") String key, Principal principal) {
 
         RestWrapper restWrapper = null;
         try {
-
-            Properties properties = new Properties();
-
+            Process parentProcess=processDAO.get(processId);
+            if (parentProcess.getProcess()!=null)
+                processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),WRITE);
+            else
+                processDAO.securityCheck(processId,principal.getName(),WRITE);
             com.wipro.ats.bdre.md.dao.jpa.PropertiesId propertiesId = new com.wipro.ats.bdre.md.dao.jpa.PropertiesId();
             propertiesId.setProcessId(processId);
             propertiesId.setPropKey(key);
             propertiesDAO.delete(propertiesId);
-
-            // properties = s.selectOne("call_procedures.DeleteProperty", properties);
-
             restWrapper = new RestWrapper(null, RestWrapper.OK);
             LOGGER.info("Record with ID:" + processId + "," + key + " deleted from Properties by User:" + principal.getName());
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -158,13 +166,17 @@ public class PropertiesAPI extends MetadataAPIBase {
      */
     @RequestMapping(value = {"/{id}"}, method = RequestMethod.GET)
 
-    public
+
     @ResponseBody
-    RestWrapper list(@PathVariable("id") Integer processId, Principal principal) {
+    public RestWrapper list(@PathVariable("id") Integer processId, Principal principal) {
 
         RestWrapper restWrapper = null;
         try {
-
+            Process parentProcess=processDAO.get(processId);
+            if (parentProcess.getProcess()!=null)
+                processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),"read");
+            else
+                processDAO.securityCheck(processId,principal.getName(),"read");
             List<Properties> propertiesList = new ArrayList<Properties>();
             Process process = new Process();
             process.setProcessId(processId);
@@ -172,7 +184,6 @@ public class PropertiesAPI extends MetadataAPIBase {
             List<com.wipro.ats.bdre.md.dao.jpa.Properties> propertiesList1=new ArrayList<com.wipro.ats.bdre.md.dao.jpa.Properties>();
                     propertiesList1=propertiesDAO.getByProcessId(process);
             Integer counter=propertiesList1.size();
-            // List<Properties> propertiesList = s.selectList("call_procedures.ListPropertiesOfProcess", properties);
             for (com.wipro.ats.bdre.md.dao.jpa.Properties properties : propertiesList1) {
                 com.wipro.ats.bdre.md.beans.table.Properties returnProperties = new com.wipro.ats.bdre.md.beans.table.Properties();
                 returnProperties.setProcessId(properties.getProcess().getProcessId());
@@ -187,7 +198,12 @@ public class PropertiesAPI extends MetadataAPIBase {
             restWrapper = new RestWrapper(propertiesList, RestWrapper.OK);
             LOGGER.info("Record with ID:" + processId + "selected from Properties by User:" + principal.getName());
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -203,16 +219,20 @@ public class PropertiesAPI extends MetadataAPIBase {
      */
     @RequestMapping(value = {"/{id}/{cg}", "/{id}/{cg}/"}, method = RequestMethod.GET)
 
-    public
+
     @ResponseBody
-    RestWrapper listConfigGroup(@PathVariable("id") Integer processId,
+    public RestWrapper listConfigGroup(@PathVariable("id") Integer processId,
                                 @PathVariable("cg") String configGroup,
                                 Principal principal) {
 
         RestWrapper restWrapper = null;
         try {
+            Process parentProcess=processDAO.get(processId);
+            if (parentProcess.getProcess()!=null)
+                processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),"read");
+            else
+                processDAO.securityCheck(processId,principal.getName(),"read");
             List<Properties> propertiesList = new ArrayList<Properties>();
-            //List<Properties> propertiesList = s.selectList("call_procedures.ListConfigGroup", properties);
             List<com.wipro.ats.bdre.md.dao.jpa.Properties>jpaPropertiesList=new ArrayList<com.wipro.ats.bdre.md.dao.jpa.Properties>();
                     jpaPropertiesList=propertiesDAO.getPropertiesForConfig(processId, configGroup);
             Integer counter=jpaPropertiesList.size();
@@ -229,7 +249,12 @@ public class PropertiesAPI extends MetadataAPIBase {
             restWrapper = new RestWrapper(propertiesList, RestWrapper.OK);
             LOGGER.info("Record with ID:" + processId + "and config group" + configGroup + "selected from Properties by User:" + principal.getName());
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -243,29 +268,22 @@ public class PropertiesAPI extends MetadataAPIBase {
      * @return restWrapper It contains updated instance of Properties.
      */
     @RequestMapping(value = {"/", ""}, method = RequestMethod.POST)
-    public
+
     @ResponseBody
-    RestWrapper update(@ModelAttribute("properties")
+    public RestWrapper update(@ModelAttribute("properties")
                        @Valid Properties properties, BindingResult bindingResult, Principal principal) {
 
         RestWrapper restWrapper = null;
         if (bindingResult.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("<p>Please fix following errors and try again<p><ul>");
-            List<FieldError> errors = bindingResult.getFieldErrors();
-            for (FieldError error : errors) {
-                errorMessages.append("<li>");
-                errorMessages.append(error.getField());
-                errorMessages.append(". Bad value: '");
-                errorMessages.append(error.getRejectedValue());
-                errorMessages.append("'</li>");
-            }
-            errorMessages.append("</ul>");
-            restWrapper = new RestWrapper(errorMessages.toString(), RestWrapper.ERROR);
-            return restWrapper;
+            BindingResultError bindingResultError = new BindingResultError();
+            return bindingResultError.errorMessage(bindingResult);
         }
         try {
-
-//            Properties propertiesUpdate = s.selectOne("call_procedures.UpdateProperties", properties);
+            Process parentProcess=processDAO.get(properties.getProcessId());
+            if (parentProcess.getProcess()!=null)
+                processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),WRITE);
+            else
+                processDAO.securityCheck(properties.getProcessId(),principal.getName(),WRITE);
             com.wipro.ats.bdre.md.dao.jpa.Properties updateProperties = new com.wipro.ats.bdre.md.dao.jpa.Properties();
             PropertiesId propertiesId = new PropertiesId();
             propertiesId.setPropKey(properties.getKey());
@@ -281,7 +299,12 @@ public class PropertiesAPI extends MetadataAPIBase {
             restWrapper = new RestWrapper(properties, RestWrapper.OK);
             LOGGER.info("Record with ID:" + properties.getProcessId() + " updated in Properties by User:" + principal.getName() + properties);
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -296,28 +319,22 @@ public class PropertiesAPI extends MetadataAPIBase {
      * @return restWrapper It contains instance of Properties passed.
      */
     @RequestMapping(value = {"/", ""}, method = RequestMethod.PUT)
-    public
+
     @ResponseBody
-    RestWrapper insert(@ModelAttribute("properties")
+    public RestWrapper insert(@ModelAttribute("properties")
                        @Valid Properties properties, BindingResult bindingResult, Principal principal) {
 
         RestWrapper restWrapper = null;
         if (bindingResult.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("<p>Please fix following errors and try again<p><ul>");
-            List<FieldError> errors = bindingResult.getFieldErrors();
-            for (FieldError error : errors) {
-                errorMessages.append("<li>");
-                errorMessages.append(error.getField());
-                errorMessages.append(". Bad value: '");
-                errorMessages.append(error.getRejectedValue());
-                errorMessages.append("'</li>");
-            }
-            errorMessages.append("</ul>");
-            restWrapper = new RestWrapper(errorMessages.toString(), RestWrapper.ERROR);
-            return restWrapper;
+            BindingResultError bindingResultError = new BindingResultError();
+            return bindingResultError.errorMessage(bindingResult);
         }
         try {
-//              Properties propertyInsert = s.selectOne("call_procedures.InsertProperties", properties);
+            Process parentProcess=processDAO.get(properties.getProcessId());
+            if (parentProcess.getProcess()!=null)
+                processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),WRITE);
+            else
+                processDAO.securityCheck(properties.getProcessId(),principal.getName(),WRITE);
             com.wipro.ats.bdre.md.dao.jpa.Properties insertProperties = new com.wipro.ats.bdre.md.dao.jpa.Properties();
             PropertiesId propertiesId = new PropertiesId();
             propertiesId.setPropKey(properties.getKey());
@@ -333,7 +350,12 @@ public class PropertiesAPI extends MetadataAPIBase {
             restWrapper = new RestWrapper(properties, RestWrapper.OK);
             LOGGER.info("Record with ID:" + properties.getProcessId() + " inserted in Properties by User:" + principal.getName() + properties);
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -347,17 +369,17 @@ public class PropertiesAPI extends MetadataAPIBase {
      * @return
      */
     @RequestMapping(value = "/all/{id}", method = RequestMethod.GET)
-    public
+
     @ResponseBody
-    RestWrapper getAll(@PathVariable("id") Integer parentProcessId, Principal principal) {
+    public RestWrapper getAll(@PathVariable("id") Integer parentProcessId, Principal principal) {
 
         RestWrapper restWrapper = null;
         try {
-
-//            Properties properties = new Properties();
-//            properties.setProcessId(parentProcessId);
-//            List<Properties> allProperties = s.selectList("call_procedures.GetPropertiesOfProcess", properties);
-
+            Process parentProcess=processDAO.get(parentProcessId);
+            if (parentProcess.getProcess()!=null)
+                processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),WRITE);
+            else
+                processDAO.securityCheck(parentProcessId,principal.getName(),WRITE);
             List<Properties> propertiesList = new ArrayList<Properties>();
             Process process = new Process();
             process.setProcessId(parentProcessId);
@@ -379,7 +401,12 @@ public class PropertiesAPI extends MetadataAPIBase {
             LOGGER.debug("Records fetched:" + propertiesList);
             LOGGER.info("All records with parent process ID:" + parentProcessId + " selected from Properties by User:" + principal.getName());
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }
+        catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;

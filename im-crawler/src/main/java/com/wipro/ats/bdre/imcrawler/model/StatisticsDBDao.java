@@ -1,7 +1,7 @@
 package com.wipro.ats.bdre.imcrawler.model;
 
 
-import com.wipro.ats.bdre.imcrawler.jpa.Statisticsdb;
+import com.wipro.ats.bdre.md.dao.jpa.Statisticsdb;
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -70,7 +70,9 @@ public class StatisticsDBDao {
         session.beginTransaction();
         Long longid = new Long(id.intValue());
         Statisticsdb statisticsdb=(Statisticsdb)session.get(Statisticsdb.class,longid);
-        session.delete(statisticsdb);
+        //delete only if it is present from before i.e. not deleted by other mapper
+//        if(statisticsdb != null)
+            session.delete(statisticsdb);
         session.getTransaction().commit();
     }
 }

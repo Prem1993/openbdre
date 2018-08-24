@@ -13,6 +13,7 @@
  */
 package com.wipro.ats.bdre.md.api;
 
+import com.wipro.ats.bdre.md.api.base.MetadataAPIBase;
 import com.wipro.ats.bdre.md.beans.LineageNodeInfo;
 import com.wipro.ats.bdre.md.beans.LineageQueryInfo;
 import com.wipro.ats.bdre.md.beans.LineageRelationInfo;
@@ -23,27 +24,30 @@ import com.wipro.ats.bdre.md.dao.jpa.*;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.util.Date;
 
 /**
  * Created by KA294215 on 17-12-2015.
  */
-public class Lineage {
-    private static final Logger LOGGER = Logger.getLogger(BatchEnqueuer.class);
-    public Lineage() {
-        ApplicationContext context = new ClassPathXmlApplicationContext("spring-dao.xml");
-        AutowireCapableBeanFactory acbFactory = context.getAutowireCapableBeanFactory();
-        acbFactory.autowireBean(this);
-    }
+public class Lineage extends MetadataAPIBase {
+    private static final Logger LOGGER = Logger.getLogger(Lineage.class);
+
     @Autowired
     LineageQueryDAO lineageQueryDAO;
     @Autowired
     LineageNodeDAO lineageNodeDAO;
     @Autowired
     LineageRelationDAO lineageRelationDAO;
+
+    public Lineage() {
+        AutowireCapableBeanFactory acbFactory = getAutowireCapableBeanFactory();
+        acbFactory.autowireBean(this);
+    }
+    @Override
+    public Lineage execute(String[] params) {
+        return null;
+    }
 
     public void insertLineageQuery(LineageQueryInfo lineageQueryInfo){
         LineageQuery lineageQuery = new LineageQuery();
@@ -62,6 +66,7 @@ public class Lineage {
             lineageQuery.setInstanceExecId(lineageQueryInfo.getInstanceExecId());
         }
         lineageQueryDAO.insert(lineageQuery);
+        LOGGER.info("id of lineage query inserted:"+lineageQuery.getQueryId());
     }
 
     public void insertLineageNode(LineageNodeInfo lineageNodeInfo){
@@ -72,7 +77,7 @@ public class Lineage {
         lineageNode.setLineageNodeType(lineageNodeType);
         if (lineageNodeInfo.getContainerNodeId() != null){
             LineageNode lineageContainerNode = new LineageNode();
-            lineageContainerNode.setNodeId(lineageNodeInfo.getNodeId());
+            lineageContainerNode.setNodeId(lineageNodeInfo.getContainerNodeId());
             lineageNode.setLineageNode(lineageContainerNode);
         }
         if (lineageNodeInfo.getNodeOrder() != null){
@@ -97,16 +102,20 @@ public class Lineage {
     public void insertLineageRelation (LineageRelationInfo lineageRelationInfo){
         LineageRelation lineageRelation = new LineageRelation();
         lineageRelation.setRelationId(lineageRelationInfo.getRelationId());
+
         LineageNode srcLineageNode = new LineageNode();
         srcLineageNode.setNodeId(lineageRelationInfo.getSrcNodeId());
         lineageRelation.setLineageNodeBySrcNodeId(srcLineageNode);
+
         LineageNode tagertLineageNode = new LineageNode();
         tagertLineageNode.setNodeId(lineageRelationInfo.getTargetNodeId());
         lineageRelation.setLineageNodeByTargetNodeId(tagertLineageNode);
+
         LineageQuery lineageQuery = new LineageQuery();
         lineageQuery.setQueryId(lineageRelationInfo.getQueryId());
         lineageRelation.setLineageQuery(lineageQuery);
         lineageRelation.setDotString(lineageRelationInfo.getDotString());
+
         lineageRelationDAO.insert(lineageRelation);
 
     }

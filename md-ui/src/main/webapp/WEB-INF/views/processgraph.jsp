@@ -1,10 +1,21 @@
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
 	 pageEncoding="ISO-8859-1"%>
+	 <%@taglib uri="http://www.springframework.org/tags" prefix="spring"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-	<title>Bigdata Ready Enterprise</title>
+	<title><spring:message code="common.page.title_bdre_1"/></title>
+	<script>
+	  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	  //Please replace with your own analytics id
+	  ga('create', 'UA-72345517-1', 'auto');
+	  ga('send', 'pageview');
+	</script>
+
 	<!-- Include one of jTable styles. -->
 
 	<link href="../css/metro/brown/jtable.css" rel="stylesheet" type="text/css" />
@@ -39,7 +50,7 @@
 			    labels: xlabel,
 			    datasets: [
 				{
-				    label: 'Performance graph for ' + pid,
+				    label: '<spring:message code="processgraph.page.label_graph"/>'+' ' + pid,
 				    fillColor: "rgba(31, 160, 228,0.3)",
 				    strokeColor: "rgba(31, 160, 228,1)",
 				    pointColor: "rgba(31, 160, 228,1)",
@@ -89,8 +100,8 @@
     <div style="width:100%;">
 	<div>
 	    <canvas id="canvas"></canvas>
-	    <p>X axis : Sample time(from current) in hours</p>
-	    <p>Y axis : Duration of the execution in section</p>
+	    <p><spring:message code="processgraph.page.x_axis"/></p>
+	    <p><spring:message code="processgraph.page.y_axis"/></p>
 	</div>
     </div>
 </body>

@@ -14,11 +14,12 @@ public class PropertyConfig {
     private int politenessDelay;
     private int maxDepthOfCrawling;
     private int maxPagesToFetch;
-    private boolean includeBinaryContentInCrawling;
-    private boolean resumableCrawling;
+    private int includeBinaryContentInCrawling;
+    private int resumableCrawling;
     private String userAgentString;
     private String proxyHost;
     private int proxyPort;
+    private String outputPath;
     private String proxyUserName;
     private String proxyPassword;
     private String url;
@@ -42,6 +43,10 @@ public class PropertyConfig {
         return url;
     }
 
+    public String getOutputPath() {
+        return outputPath;
+    }
+
     public String getProxyPassword() {
         return proxyPassword;
     }
@@ -58,11 +63,11 @@ public class PropertyConfig {
         return maxPagesToFetch;
     }
 
-    public boolean isIncludeBinaryContentInCrawling() {
+    public int isIncludeBinaryContentInCrawling() {
         return includeBinaryContentInCrawling;
     }
 
-    public boolean isResumableCrawling() {
+    public int isResumableCrawling() {
         return resumableCrawling;
     }
 
@@ -104,14 +109,14 @@ public class PropertyConfig {
             maxPagesToFetch = 5;
         }
         if (listForParams.getProperty("includeBinaryContentInCrawling") != null) {
-            includeBinaryContentInCrawling = Boolean.parseBoolean(listForParams.getProperty("includeBinaryContentInCrawling"));
+            includeBinaryContentInCrawling = Integer.parseInt(listForParams.getProperty("includeBinaryContentInCrawling"));
         } else {
-            includeBinaryContentInCrawling = false;
+            includeBinaryContentInCrawling = 0;
         }
         if (listForParams.getProperty("resumableCrawling") != null) {
-            resumableCrawling = Boolean.parseBoolean(listForParams.getProperty("resumableCrawling"));
+            resumableCrawling = Integer.parseInt(listForParams.getProperty("resumableCrawling"));
         } else {
-            resumableCrawling = false;
+            resumableCrawling = 0;
         }
         if (listForParams.getProperty("userAgentString") != null) {
             userAgentString = listForParams.getProperty("userAgentString");
@@ -131,6 +136,7 @@ public class PropertyConfig {
             proxyPassword = listForParams.getProperty("proxyPassword");
         }
 
+        outputPath = listForParams.getProperty("outputPath");
         url = listForParams.getProperty("url");
         urlsToSearch = listForParams.getProperty("urlsToSearch");
         urlsNotToSearch = listForParams.getProperty("urlsNotToSearch");
@@ -142,7 +148,7 @@ public class PropertyConfig {
                 " maxPagesToFetch: " + maxPagesToFetch + " includeBinaryContentInCrawling: " + includeBinaryContentInCrawling +
                 " resumableCrawling: " + resumableCrawling + " userAgentString: " + userAgentString + " proxyHost: " + proxyHost +
                 " proxyPort: " + proxyPort + " proxyUserName: " + proxyUserName + " url(comma seperated): " + url +
-                " urlsToSearch Pattern: "+ urlsToSearch+ " urlsNotToSearch Pattern: "+urlsNotToSearch);
+                " urlsToSearch Pattern: "+ urlsToSearch+ " urlsNotToSearch Pattern: "+urlsNotToSearch + " outputPath: "+outputPath);
     }
 
 

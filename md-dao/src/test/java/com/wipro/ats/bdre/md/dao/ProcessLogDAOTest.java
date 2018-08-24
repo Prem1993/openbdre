@@ -15,8 +15,10 @@
 package com.wipro.ats.bdre.md.dao;
 
 import com.wipro.ats.bdre.md.beans.ProcessLogInfo;
+import com.wipro.ats.bdre.md.dao.jpa.BusDomain;
 import com.wipro.ats.bdre.md.dao.jpa.Process;
 import com.wipro.ats.bdre.md.dao.jpa.ProcessLog;
+import com.wipro.ats.bdre.md.dao.jpa.ProcessType;
 import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -46,12 +48,18 @@ public class ProcessLogDAOTest {
     ProcessLogDAO processLogDAO;
     @Autowired
     ProcessDAO processDAO;
+    @Autowired
+    BusDomainDAO busDomainDAO;
+    @Autowired
+    ProcessTypeDAO processTypeDAO;
 
+    @Ignore
     @Test
     public void testList() throws Exception {
         LOGGER.info("Size of ProcessLog is atleast:" + processLogDAO.list(0, 10).size());
     }
 
+    @Ignore
     @Test
     public void testTotalRecordCount() throws Exception {
         LOGGER.info("Size of ProcessLog is:" + processLogDAO.totalRecordCount());
@@ -65,9 +73,22 @@ public class ProcessLogDAOTest {
         LOGGER.info("ProcessLog(0) message:" + processLogDAO.get(Long.valueOf(2)).getMessage());
     }
 
-    @Test @Ignore
+    @Test
     public void testInsertUpdateAndDelete() throws Exception {
-        Process process = processDAO.get(10805);
+        BusDomain busDomain = busDomainDAO.get(1);
+        ProcessType processType = processTypeDAO.get(1);
+        Process process = new Process();
+        process.setProcessName("Test");
+        process.setDescription("Test Process");
+        process.setBusDomain(busDomain);
+        process.setProcessType(processType);
+        process.setAddTs(new Date());
+        process.setCanRecover(true);
+        process.setEnqueuingProcessId(0);
+        process.setNextProcessId("10802");
+        process.setDeleteFlag(false);
+        process.setEditTs(new Date());
+        Integer id = processDAO.insert(process);
         ProcessLog processLog = new ProcessLog();
 
         processLog.setProcess(process);
@@ -83,13 +104,14 @@ public class ProcessLogDAOTest {
         LOGGER.info("Updated processLog with message:" + processLog.getMessage());
         processLogDAO.delete(processLogId);
         LOGGER.info("ProcessLog Deleted with ID:" + processLogId);
+        processDAO.testDelete(id);
     }
 
     @Test
     @Ignore
     public void testLog() throws Exception {
         ProcessLogInfo processLogInfo = new ProcessLogInfo();
-        processLogInfo.setProcessId(10802);
+        processLogInfo.setProcessId(5);
         processLogInfo.setAddTs(new Date());
         processLogInfo.setMessage("Test1");
         processLogInfo.setMessageId("Test2");
@@ -104,7 +126,7 @@ public class ProcessLogDAOTest {
     @Ignore
     public void testGetLastValue() throws Exception {
         ProcessLogInfo processLogInfo = new ProcessLogInfo();
-        processLogInfo.setProcessId(10805);
+        processLogInfo.setProcessId(5);
         processLogInfo.setLogCategory("test");
         processLogInfo.setMessage("test");
         processLogInfo.setMessageId("test");
@@ -114,17 +136,12 @@ public class ProcessLogDAOTest {
         LOGGER.info(" processid of Last inserted process is" + processLogInfo1.getProcessId());
         ;
     }
-
-    @Test @Ignore
+  @Ignore
+    @Test
     public void testlistLog() {
         ProcessLogInfo processLogInfo = new ProcessLogInfo();
-        processLogInfo.setProcessId(10805);
-        processLogInfo.setLogCategory("test");
-        processLogInfo.setMessage("test");
-        processLogInfo.setMessageId("test");
-        processLogInfo.setInstanceRef(Long.parseLong("10"));
-        processLogInfo.setAddTs(new Date());
-        processLogInfo.setPage(1);
+        processLogInfo.setParentProcessId(null);
+        processLogInfo.setPage(0);
         processLogInfo.setPageSize(10);
         List<ProcessLogInfo> processLogInfoList = processLogDAO.listLog(processLogInfo);
         LOGGER.info("size of the list is " + processLogInfoList.size());
@@ -134,7 +151,7 @@ public class ProcessLogDAOTest {
     @Ignore
     public void testGetProcessLog() {
         ProcessLogInfo processLogInfo = new ProcessLogInfo();
-        processLogInfo.setProcessId(10805);
+        processLogInfo.setProcessId(5);
         processLogInfo.setLogCategory("test");
         processLogInfo.setMessage("test");
         processLogInfo.setMessageId("test");

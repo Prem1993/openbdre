@@ -6,9 +6,9 @@ CREATE TABLE bus_domain (
   PRIMARY KEY (bus_domain_id)
 );
   CREATE SEQUENCE bus_domain_seq
-  MINVALUE 1
+  MINVALUE 2
   MAXVALUE 9999999999
-  START WITH 1
+  START WITH 2
   INCREMENT BY 1
   CACHE 2;
 
@@ -46,7 +46,11 @@ CREATE TABLE workflow_type (
   workflow_type_name varchar(45) NOT NULL,
   PRIMARY KEY (workflow_id)) ;
 
-
+CREATE TABLE permission_type (
+  permission_type_id number(11) NOT NULL,
+  permission_type_name varchar(45) NOT NULL,
+  PRIMARY KEY (permission_type_id)
+);
 
 CREATE TABLE servers (
 	  server_id number(10,0) NOT NULL,
@@ -71,7 +75,7 @@ CREATE TABLE servers (
 CREATE TABLE process_template
    (	 PROCESS_TEMPLATE_ID  number(10,0) NOT NULL ENABLE,
 	 DESCRIPTION  VARCHAR2(256 BYTE) NOT NULL ENABLE,
-	 ADD_TS  TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP NOT NULL ENABLE,
+	 ADD_TS  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP NOT NULL ENABLE,
 	 PROCESS_NAME  VARCHAR2(45 BYTE) NOT NULL ENABLE,
 	 BUS_DOMAIN_ID  number(10,0) NOT NULL ENABLE,
 	 PROCESS_TYPE_ID  number(10,0) NOT NULL ENABLE,
@@ -99,12 +103,27 @@ CREATE TABLE process_template
      INCREMENT BY 1
      CACHE 2;
 
+CREATE  TABLE users (
+  username varchar2(45) NOT NULL ,
+  password varchar2(45) NOT NULL ,
+  enabled number(1,0)  DEFAULT 1 NOT NULL,
+  CONSTRAINT USERS_PK PRIMARY KEY (username)
+);
+
+
+CREATE TABLE user_roles (
+  user_role_id number(10,0) NOT NULL,
+  username varchar2(45) NOT NULL,
+  ROLE varchar2(45) NOT NULL,
+  CONSTRAINT user_roles_PK PRIMARY KEY (user_role_id),
+  CONSTRAINT fk_username FOREIGN KEY (username) REFERENCES users (username)
+);
 
 
 
 CREATE TABLE properties_template (
   process_template_id number(10,0) NOT NULL,
-  config_group varchar2(10) NOT NULL,
+  config_group varchar2(128) NOT NULL,
   prop_temp_key varchar2(128) NOT NULL,
   prop_temp_value varchar2(2048) NOT NULL,
   description varchar2(1028) NOT NULL,
@@ -116,12 +135,18 @@ CREATE TABLE properties_template (
  CREATE TABLE  process
    (	PROCESS_ID  number(10,0) NOT NULL ENABLE,
 	 DESCRIPTION  VARCHAR2(256 BYTE) NOT NULL ENABLE,
-	 ADD_TS  TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP NOT NULL ENABLE,
-	 EDIT_TS  TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP NOT NULL ENABLE,
+	 ADD_TS  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP NOT NULL ENABLE,
+	 EDIT_TS  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP NOT NULL ENABLE,
 	 PROCESS_NAME  VARCHAR2(45 BYTE) NOT NULL ENABLE,
 	 BUS_DOMAIN_ID  number(10,0) NOT NULL ENABLE,
 	 PROCESS_TYPE_ID  number(10,0) NOT NULL ENABLE,
 	 PARENT_PROCESS_ID  number(10,0) DEFAULT NULL,
+	 PROCESS_CODE VARCHAR(256),
+	 user_name VARCHAR(45),
+         owner_role_id number(11),
+         user_access_id number(1)  DEFAULT '7',
+         group_access_id number(1)  DEFAULT '4',
+         others_access_id number(1)  DEFAULT '0',
 	 CAN_RECOVER  number(1,0) DEFAULT 1 NOT NULL ENABLE,
 	 ENQUEUING_PROCESS_ID  number(10,0) DEFAULT 0 NOT NULL ENABLE,
 	 BATCH_CUT_PATTERN  VARCHAR2(45 BYTE),
@@ -134,18 +159,20 @@ CREATE TABLE properties_template (
 	  REFERENCES  BUS_DOMAIN  (BUS_DOMAIN_ID) ENABLE,
 	 CONSTRAINT  ORIGINAL_PROCESS_ID1  FOREIGN KEY (PARENT_PROCESS_ID)
 	  REFERENCES   PROCESS  (PROCESS_ID) ENABLE,
-	 CONSTRAINT  WORKFLOW_ID  FOREIGN KEY (WORKFLOW_ID)
-	  REFERENCES   WORKFLOW_TYPE  (WORKFLOW_ID) ENABLE,
-	 CONSTRAINT  PROCESS_TYPE_ID1  FOREIGN KEY (PROCESS_TYPE_ID)
-	  REFERENCES   PROCESS_TYPE  (PROCESS_TYPE_ID) ENABLE,
-    CONSTRAINT PROCESS_IBFK_1 FOREIGN KEY (PROCESS_TEMPLATE_ID)
-    REFERENCES PROCESS_TEMPLATE (PROCESS_TEMPLATE_ID) ENABLE
+	 CONSTRAINT  WORKFLOW_ID  FOREIGN KEY (WORKFLOW_ID) REFERENCES   WORKFLOW_TYPE  (WORKFLOW_ID) ENABLE,
+	 CONSTRAINT  PROCESS_TYPE_ID1  FOREIGN KEY (PROCESS_TYPE_ID) REFERENCES   PROCESS_TYPE  (PROCESS_TYPE_ID) ENABLE,
+    CONSTRAINT PROCESS_IBFK_1 FOREIGN KEY (PROCESS_TEMPLATE_ID) REFERENCES PROCESS_TEMPLATE (PROCESS_TEMPLATE_ID) ENABLE,
+     CONSTRAINT permission_type_id1 FOREIGN KEY (user_access_id) REFERENCES permission_type (permission_type_id) ENABLE,
+        CONSTRAINT permission_type_id2 FOREIGN KEY (group_access_id) REFERENCES permission_type (permission_type_id) ENABLE,
+        CONSTRAINT permission_type_id3 FOREIGN KEY (others_access_id) REFERENCES permission_type (permission_type_id) ENABLE,
+        CONSTRAINT owner_check FOREIGN KEY(owner_role_id) REFERENCES user_roles (user_role_id) ENABLE,
+          CONSTRAINT user_contreint FOREIGN KEY (user_name) REFERENCES users (username) ENABLE
    ) ;
 
     CREATE SEQUENCE process_seq
-     MINVALUE 1
+     MINVALUE 36
      MAXVALUE 9999999999
-     START WITH 1
+     START WITH 36
      INCREMENT BY 1
      CACHE 2;
 
@@ -153,55 +180,13 @@ CREATE TABLE properties_template (
 
 CREATE TABLE properties (
   process_id number(10,0) NOT NULL,
-  config_group varchar2(10) NOT NULL,
+  config_group varchar2(128) NOT NULL,
   prop_key varchar2(128) NOT NULL,
   prop_value varchar2(2048) NOT NULL,
   description varchar2(1028) NOT NULL,
   CONSTRAINT PROPERTIES_PK PRIMARY KEY (process_id,prop_key),
  CONSTRAINT PROPERTIES_PROCESS_FK FOREIGN KEY (process_id) REFERENCES process(process_id)
 );
-
-
-
-CREATE TABLE hive_tables (
-  table_id number(10,0) NOT NULL,
-  comments varchar2(256) NOT NULL,
-  location_type varchar2(45) NOT NULL,
-  dbname varchar2(45) DEFAULT NULL,
-  batch_id_partition_col varchar2(45) DEFAULT NULL,
-  table_name varchar2(45) NOT NULL,
-  type varchar2(45) NOT NULL,
-  ddl varchar2(2048) NOT NULL,
-  PRIMARY KEY (table_id)
-);
-
- CREATE SEQUENCE hive_tables_seq
-  MINVALUE 1
-  MAXVALUE 9999999999
-  START WITH 1
-  INCREMENT BY 1
-  CACHE 2;
-
-
-
-
-
-CREATE TABLE etl_driver (
-  etl_process_id number(10,0) NOT NULL,
-  raw_table_id number(10,0) NOT NULL,
-  base_table_id number(10,0) NULL ,
-  insert_type NUMBER(5,0) NULL,
-  drop_raw NUMBER(1,0) DEFAULT 0 NOT NULL,
-  raw_view_id number(10,0) NOT NULL,
-  CONSTRAINT ETL_DRIVER_PK PRIMARY KEY (etl_process_id),
-  CONSTRAINT table_id_etl_driver FOREIGN KEY (raw_table_id) REFERENCES hive_tables (table_id),
-  CONSTRAINT table_id2_etl_driver FOREIGN KEY (base_table_id) REFERENCES hive_tables (table_id),
-  CONSTRAINT batch_id_etl_driver FOREIGN KEY (etl_process_id) REFERENCES process (process_id),
-  CONSTRAINT view_id_etl_driver FOREIGN KEY (raw_view_id) REFERENCES hive_tables (table_id)
-  );
-
-
-
 
 CREATE TABLE instance_exec (
   instance_exec_id number(19,0) NOT NULL,
@@ -247,7 +232,7 @@ CREATE TABLE batch_file (
   path varchar2(256) NOT NULL,
   file_size number(19,0) NOT NULL,
   file_hash varchar2(100) DEFAULT NULL,
-  creation_ts timestamp(0) DEFAULT SYSTIMESTAMP NOT NULL,
+  creation_ts timestamp DEFAULT SYSTIMESTAMP NOT NULL,
   CONSTRAINT server_id_fk FOREIGN KEY (server_id) REFERENCES servers (server_id),
   CONSTRAINT unique_batch_fk FOREIGN KEY (batch_id) REFERENCES batch (batch_id)
 );
@@ -268,10 +253,10 @@ CREATE TABLE batch_consump_queue (
   source_batch_id number(19,0) NOT NULL,
   target_batch_id number(19,0) DEFAULT NULL,
   queue_id number(19,0) NOT NULL,
-  insert_ts timestamp(0) DEFAULT SYSTIMESTAMP NOT NULL,
+  insert_ts timestamp DEFAULT SYSTIMESTAMP NOT NULL,
   source_process_id number(10,0) DEFAULT NULL,
-  start_ts timestamp(0) DEFAULT NULL ,
-  end_ts timestamp(0) DEFAULT NULL ,
+  start_ts timestamp DEFAULT NULL ,
+  end_ts timestamp DEFAULT NULL ,
   batch_state number(10,0) NOT NULL,
   batch_marking varchar2(45) DEFAULT NULL,
   process_id number(10,0) NOT NULL,
@@ -308,10 +293,10 @@ CREATE TABLE archive_consump_queue (
   source_batch_id number(19,0) NOT NULL,
   target_batch_id number(19,0) DEFAULT NULL,
   queue_id number(19,0) NOT NULL,
-  insert_ts timestamp(0) DEFAULT SYSTIMESTAMP NOT NULL,
+  insert_ts timestamp DEFAULT SYSTIMESTAMP NOT NULL,
   source_process_id number(10,0) DEFAULT NULL,
-  start_ts timestamp(0) DEFAULT NULL,
-  end_ts timestamp(0) DEFAULT NULL,
+  start_ts timestamp DEFAULT NULL,
+  end_ts timestamp DEFAULT NULL,
   batch_state number(10,0) NOT NULL,
   batch_marking varchar2(45) DEFAULT NULL,
   process_id number(10,0) NOT NULL,
@@ -342,55 +327,7 @@ select CURRENT_TIMESTAMP into :new.insert_ts from dual;
 end;
 /
 
-CREATE TABLE etlstep (
-  uuid varchar2(128) NOT NULL ,
-  serial_number number(19,0) NOT NULL ,
-  bus_domain_id number(10,0) NOT NULL,
-  process_name varchar2(256) NOT NULL,
-  description varchar2(2048) NOT NULL,
-  base_table_name varchar2(45) ,
-  raw_table_name varchar2(45) ,
-  raw_view_name varchar2(45) ,
-  base_db_name varchar2(45) DEFAULT NULL,
-  raw_db_name varchar2(45) DEFAULT NULL,
-  base_table_ddl varchar2(2048),
-  raw_table_ddl varchar2(2048),
-  raw_view_ddl varchar2(2048),
-  raw_partition_col varchar2(45) ,
-  drop_raw number(1,0) ,
-  enq_id number(10,0),
-  column_info varchar2(45) ,
-  serde_properties varchar2(45) ,
-  table_properties varchar2(45) ,
-  input_format varchar2(45) ,
-  CONSTRAINT pk_ID primary key (serial_number,uuid)
-   );
 
- CREATE SEQUENCE etlstep_seq
-  MINVALUE 1
-  MAXVALUE 9999999999
-  START WITH 1
-  INCREMENT BY 1
-  CACHE 2;
-
-
-
-
-CREATE  TABLE users (
-  username varchar2(45) NOT NULL ,
-  password varchar2(45) NOT NULL ,
-  enabled number(1,0)  DEFAULT 1 NOT NULL,
-  CONSTRAINT USERS_PK PRIMARY KEY (username)
-);
-
-
-CREATE TABLE user_roles (
-  user_role_id number(10,0) NOT NULL,
-  username varchar2(45) NOT NULL,
-  ROLE varchar2(45) NOT NULL,
-  CONSTRAINT user_roles_PK PRIMARY KEY (user_role_id),
-  CONSTRAINT fk_username FOREIGN KEY (username) REFERENCES users (username)
-);
 
 CREATE SEQUENCE user_roles_seq
   MINVALUE 3
@@ -406,7 +343,7 @@ CREATE TABLE process_log (
   log_id number(19,0) NOT NULL,
   add_ts timestamp,
   process_id number(10,0) NOT NULL,
-  log_category varchar2(10) NOT NULL,
+  log_category varchar2(2048) NOT NULL,
   message_id varchar2(128) NOT NULL,
   message varchar2(1024) NOT NULL,
   instance_ref number(19,0),
@@ -457,7 +394,7 @@ CREATE TABLE lineage_query (
   query_id varchar2(100) NOT NULL,
   query_string varchar(4000) ,
   query_type_id number(10,0) NOT NULL,
-  create_ts timestamp(0) DEFAULT SYSTIMESTAMP,
+  create_ts timestamp DEFAULT SYSTIMESTAMP,
   process_id number(10,0),
   instance_exec_id number(19,0) DEFAULT NULL,
   constraint lineage_query_pk PRIMARY KEY (query_id),
@@ -472,8 +409,8 @@ CREATE TABLE lineage_node (
   node_type_id number(10,0) NOT NULL,
   container_node_id varchar2(100) DEFAULT NULL,
   node_order number(10,0) DEFAULT 0,
-  insert_ts timestamp(0) DEFAULT SYSTIMESTAMP NOT NULL,
-  update_ts timestamp(0) DEFAULT NULL NULL,
+  insert_ts timestamp DEFAULT SYSTIMESTAMP NOT NULL,
+  update_ts timestamp DEFAULT NULL NULL,
   dot_string varchar(4000),
   dot_label varchar(4000),
   display_name varchar2(256) DEFAULT NULL,
@@ -553,9 +490,9 @@ CREATE TABLE process_deployment_queue(
 
 
 CREATE TABLE Docidsdb (
-   docId number(10,0) not null ,
+   docid number(19,0) not null ,
    url varchar(3000),
-   primary key (docId)
+   primary key (docid)
 );
 
  CREATE SEQUENCE Docidsdb_SEQ
@@ -584,17 +521,17 @@ CREATE TABLE Statisticsdb (
 CREATE TABLE Pendingurlsdb (
    uniqid number(19,0) not null,
    pid number(19,0),
-   instanceExecid number(19,0),
+   instanceexecid number(19,0),
    url varchar(3000),
    docid number(10,0) not null,
-   parentDocid number(10,0) not null,
-   parentUrl varchar(1000),
+   parentdocid number(10,0) not null,
+   parenturl varchar(1000),
    depth number(5,0) not null,
    domain varchar(255),
-   subDomain varchar(255),
+   subdomain varchar(255),
    path varchar(1000),
    anchor varchar(255),
-   priority number(3,0) not null,
+   priority number(10,0) not null,
    tag varchar(255),
    primary key (uniqid)
 );
@@ -611,17 +548,17 @@ CREATE TABLE Pendingurlsdb (
 CREATE TABLE Weburlsdb (
    uniqid number(19,0) not null ,
    pid number(19,0),
-   instanceExecid number(19,0),
+   instanceexecid number(19,0),
    url varchar(3000),
    docid number(10,0) not null,
-   parentDocid number(10,0) not null,
-   parentUrl varchar(1000),
+   parentdocid number(10,0) not null,
+   parenturl varchar(1000),
    depth number(5,0) not null,
    domain varchar(255),
-   subDomain varchar(255),
+   subdomain varchar(255),
    path varchar(1000),
    anchor varchar(255),
-   priority number(3,0) not null,
+   priority number(10,0) not null,
    tag varchar(255),
    primary key (uniqid)
 );
@@ -632,5 +569,54 @@ CREATE SEQUENCE Weburlsdb_SEQ
        START WITH 1
        INCREMENT BY 1
        CACHE 2;
+
+CREATE TABLE app_deployment_queue_status (
+  app_deployment_status_id number(5,0) not null,
+  description varchar(45) not null,
+  PRIMARY KEY (app_deployment_status_id)
+);
+
+
+CREATE TABLE app_deployment_queue (
+  app_deployment_queue_id number(19,0) not null,
+  process_id number(10,0) not null,
+  username varchar(45) not null,
+  app_domain varchar(45) not null,
+  app_name varchar(45) not null,
+  app_deployment_status_id number(5,0) not null,
+  PRIMARY KEY (app_deployment_queue_id),
+  CONSTRAINT process_id_adq_constraint FOREIGN KEY (process_id) REFERENCES process(process_id) enable,
+  CONSTRAINT adq_user_constraint FOREIGN KEY (username) REFERENCES users(username) enable,
+  CONSTRAINT adq_state_constraint FOREIGN KEY (app_deployment_status_id) REFERENCES app_deployment_queue_status(app_deployment_status_id) enable
+);
+
+ CREATE SEQUENCE App_Deployment_SEQ
+       MINVALUE 1
+       MAXVALUE 9999999999999999999
+       START WITH 1
+       INCREMENT BY 1
+       CACHE 2;
+
+CREATE TABLE analytics_apps (
+  analytic_apps_id number(19,0) not null,
+  process_id number(10,0) not null,
+  industry_name varchar(45) not null,
+  category_name varchar(45) not null,
+  app_description varchar(45) not null,
+  app_name varchar(45) not null,
+  questions_json varchar(45) not null,
+  dashboard_url varchar(45) not null,
+  ddp_url varchar(45) not null,
+  app_image varchar(45) not null,
+  PRIMARY KEY (analytic_apps_id),
+  CONSTRAINT process_id_analytic_constraint FOREIGN KEY (process_id) REFERENCES process(process_id) enable
+ );
+
+ CREATE SEQUENCE analytics_apps_SEQ
+        MINVALUE 1
+        MAXVALUE 9999999999999999999
+        START WITH 1
+        INCREMENT BY 1
+        CACHE 2;
 
 commit;

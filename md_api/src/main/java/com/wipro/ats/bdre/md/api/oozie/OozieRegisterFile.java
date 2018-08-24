@@ -28,20 +28,16 @@ public class OozieRegisterFile {
     private static final Logger LOGGER = Logger.getLogger(OozieRegisterFile.class);
 
     /**
-     * default constructor
-     */
-    private OozieRegisterFile() {
-
-    }
-
-    /**
      * This method calls execute method and persist the output till runtime.
      *
      * @param args String array having environment and process-id with their command line notations.
      */
     public static void main(String[] args) {
-        RegisterFile rf = new RegisterFile();
-        RegisterFileInfo fileInfo = rf.execute(args);
+        new OozieRegisterFile().execute(args);
+    }
+
+    public void execute(String[] args){
+        RegisterFileInfo fileInfo = new RegisterFile().execute(args);
         OozieUtil oozieUtil = new OozieUtil();
         try {
             oozieUtil.persistBeanData(fileInfo, false);

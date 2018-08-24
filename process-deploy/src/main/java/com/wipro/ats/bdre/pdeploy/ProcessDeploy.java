@@ -15,6 +15,7 @@ package com.wipro.ats.bdre.pdeploy;
 
 import com.wipro.ats.bdre.MDConfig;
 import com.wipro.ats.bdre.exception.MetadataException;
+import com.wipro.ats.bdre.md.api.GetProcess;
 import com.wipro.ats.bdre.md.api.HaltDeploy;
 import com.wipro.ats.bdre.md.api.InitDeploy;
 import com.wipro.ats.bdre.md.api.TermDeploy;
@@ -54,20 +55,23 @@ public class ProcessDeploy implements Runnable {
     @Override
     public void run() {
         //obtain the script path from the bean, if null then fetch  the default script (busdomainId/processTypeId/fetch the script name from config file)
-        LOGGER.debug("PDQ in run:" + pdq.getDeploymentId());
+        LOGGER.info("PDQ in run:" + pdq.getDeploymentId());
         if (pdq.getDeployScriptLocation() == null) {
             pdq.setDeployScriptLocation(MDConfig.getProperty("deploy.script-path") + "/job-deployer.sh");
-            LOGGER.debug(pdq.getDeployScriptLocation());
+            LOGGER.info(pdq.getDeployScriptLocation());
         }
         String[] params = {"--deployment-id", pdq.getDeploymentId().toString()};
         //using Apache Commons Exec library
-        int iExitValue;
+        GetProcess getProcess = new GetProcess();
+        int workflowTypeId=getProcess.getProcess(pdq.getProcessId()).getWorkflowId();
+        LOGGER.info("workflow type id is "+workflowTypeId);
         String sCommandString;
-        String command = "sh " + pdq.getDeployScriptLocation() + " " + pdq.getBusDomainId() + " " + pdq.getProcessTypeId() + " " + pdq.getProcessId();
+        String command = "sh " + pdq.getDeployScriptLocation() + " " + pdq.getBusDomainId() + " " + pdq.getProcessTypeId() + " " + pdq.getProcessId() + " " + pdq.getUserName()+ " " +workflowTypeId;
+        LOGGER.info("running the command "+command);
         sCommandString = command;
         CommandLine oCmdLine = CommandLine.parse(sCommandString);
-        LOGGER.debug("executing command with deploymentId=" + pdq.getDeploymentId());
-        LOGGER.debug("executing command :" + command);
+        LOGGER.info("executing command with deploymentId=" + pdq.getDeploymentId());
+        LOGGER.info("executing command :" + command);
 
         DefaultExecutor oDefaultExecutor = new DefaultExecutor();
         oDefaultExecutor.setExitValue(0);
@@ -78,7 +82,7 @@ public class ProcessDeploy implements Runnable {
             InitDeploy initDeploy = new InitDeploy();
             initDeploy.execute(params);
 
-            iExitValue = oDefaultExecutor.execute(oCmdLine);
+            oDefaultExecutor.execute(oCmdLine);
 
             //If the script is successful then call HaltDeploy
             HaltDeploy haltDeploy = new HaltDeploy();

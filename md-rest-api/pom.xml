@@ -27,6 +27,18 @@
     <packaging>war</packaging>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>${poi.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+            <type>jar</type>
+        </dependency>
         <!-- Jackson -->
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
@@ -94,7 +106,11 @@
             <artifactId>login-module</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>dot-gen</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-exec</artifactId>
@@ -111,7 +127,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -125,6 +140,19 @@
                                     <artifactId>jetty-runner</artifactId>
                                     <destFileName>jetty-runner.jar</destFileName>
                                 </artifactItem>
+                                <artifactItem>
+ -                                    <groupId>org.mortbay.jetty</groupId>
+ -                                    <artifactId>jetty-runner</artifactId>
+ -                                    <outputDirectory>${project.parent.build.directory}/lib/webapps</outputDirectory>
+ -                                    <destFileName>jetty-runner.jar</destFileName>
+ -                                </artifactItem>
+ -                                <artifactItem>
+ -                                    <groupId>${project.groupId}</groupId>
+ -                                    <artifactId>${project.artifactId}</artifactId>
+ -                                    <version>${project.version}</version>
+ -                                    <type>${project.packaging}</type>
+ -                                    <outputDirectory>${project.parent.build.directory}/lib/webapps</outputDirectory>
+ -                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>

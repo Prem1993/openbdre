@@ -54,7 +54,7 @@ public class ProcessDAOTest {
     @Test
     @Ignore
     public void testList() throws Exception {
-        LOGGER.info("Size of Process list is atleast:" + processDAO.list(10802, 0, 10).size());
+        LOGGER.info("Size of Process list is atleast:" + processDAO.list(10802, 0, 10,"admin").size());
     }
 
     @Test
@@ -90,35 +90,53 @@ public class ProcessDAOTest {
         processDAO.update(process);
         process = processDAO.get(id);
         LOGGER.info("Updated Process Name is:" + process.getProcessName());
-        processDAO.delete(id);
+        processDAO.testDelete(id);
         LOGGER.info("Deleted process with ID:" + id);
     }
 
     @Test
     @Ignore
     public void testSubProcesslist() throws Exception {
-        LOGGER.info("Total Sub Process count is:" + processDAO.subProcesslist(10802).size());
+        for(Process process: processDAO.subProcesslist(182))
+        {
+            LOGGER.info("process "+process.getProcessId() + " is "+process.getProcessName());
+        }
+        LOGGER.info("Total Sub Process count is:" + processDAO.subProcesslist(182).size());
     }
 
     @Test
     @Ignore
     public void testSelectProcessList() throws Exception {
-        LOGGER.info("Total sub process along with parent process count is:" + processDAO.selectProcessList(10802).size());
+        for(Process process: processDAO.selectProcessList(1))
+        {
+            LOGGER.info("process "+process.getProcessId() + " is "+process.getProcessName());
+        }
+        LOGGER.info("Total sub process along with parent process count is:" + processDAO.selectProcessList(1).size());
     }
 
     @Ignore
     @Test
     public void testDelete() throws Exception {
-        processDAO.delete(10837);
+        processDAO.testDelete(10837);
         LOGGER.info("Deleted process with ID:");
     }
 
     @Test
+    @Ignore
     public void testSelectProcessListWithExec() throws Exception {
-        List<ProcessInfo> processInfoList = processDAO.selectProcessListWithExec(2, 175l);
+        List<ProcessInfo> processInfoList = processDAO.selectProcessListWithExec(10802 ,196l);
         for (ProcessInfo processInfo : processInfoList) {
             LOGGER.info(processInfo + "\n");
         }
     }
+
+    @Test
+    @Ignore
+
+    public void testgetParentProcessTypeId() throws Exception {
+       String parentProcessTypeId = processDAO.getParentProcessTypeId(new Integer(8));
+       LOGGER.info(parentProcessTypeId);
+        }
+
 
 }

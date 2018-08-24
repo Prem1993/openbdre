@@ -28,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * Created by SH324337 on 11/2/2015.
  */
@@ -71,7 +73,7 @@ public class RegisterFileDAO {
 
             Criteria fileCriteria = session.createCriteria(File.class).add(Restrictions.eq("servers", servers)).add(Restrictions.eq("id.fileHash", fileId.getFileHash())).add(Restrictions.eq("id.path", fileId.getPath()));
             LOGGER.info("matched file count" + fileCriteria.list().size());
-            if (fileCriteria.list().size() > 0) {
+            if (!fileCriteria.list().isEmpty()) {
                 LOGGER.error("File Already exists exception");
                 throw new MetadataException("File Already exists exception");
             } else {
@@ -83,15 +85,22 @@ public class RegisterFileDAO {
                 session.save(newFile);
                 BatchStatus batchStatusObj = new BatchStatus();
                 batchStatusObj.setBatchStateId(1);
-                BatchConsumpQueue batchConsumpQueueObj = new BatchConsumpQueue();
-                batchConsumpQueueObj.setBatchBySourceBatchId(batchObj);
-                batchConsumpQueueObj.setSourceProcessId(null);
-                batchConsumpQueueObj.setInsertTs(registerFileInfo.getCreationTs());
-                batchConsumpQueueObj.setBatchStatus(batchStatusObj);
-                batchConsumpQueueObj.setBatchMarking(registerFileInfo.getBatchMarking());
+
                 Process subProcess = (Process) session.get(Process.class, registerFileInfo.getSubProcessId());
-                batchConsumpQueueObj.setProcess(subProcess);
-                session.save(batchConsumpQueueObj);
+
+                Process parentProcess = subProcess.getProcess();
+                Criteria criteria = session.createCriteria(Process.class).add(Restrictions.eq("enqueuingProcessId",parentProcess.getProcessId()));
+                List<Process> processList = criteria.list();
+                for(Process process: processList) {
+                    BatchConsumpQueue batchConsumpQueueObj = new BatchConsumpQueue();
+                    batchConsumpQueueObj.setBatchBySourceBatchId(batchObj);
+                    batchConsumpQueueObj.setSourceProcessId(registerFileInfo.getSubProcessId());
+                    batchConsumpQueueObj.setInsertTs(registerFileInfo.getCreationTs());
+                    batchConsumpQueueObj.setBatchStatus(batchStatusObj);
+                    batchConsumpQueueObj.setBatchMarking(registerFileInfo.getBatchMarking());
+                    batchConsumpQueueObj.setProcess(process);
+                    session.save(batchConsumpQueueObj);
+                }
             }
             session.getTransaction().commit();
 
@@ -99,8 +108,7 @@ public class RegisterFileDAO {
 
         } catch (MetadataException e) {
             session.getTransaction().rollback();
-            LOGGER.info("Error " + e);
-            return null;
+            throw e;
         } finally {
             session.close();
         }
@@ -108,3 +116,4 @@ public class RegisterFileDAO {
     }
 
 }
+

@@ -18,7 +18,6 @@ import com.wipro.ats.bdre.exception.MetadataException;
 import com.wipro.ats.bdre.md.beans.DQSetupInfo;
 import com.wipro.ats.bdre.md.dao.jpa.*;
 import com.wipro.ats.bdre.md.dao.jpa.Process;
-import com.wipro.ats.bdre.md.triggers.ProcessValidateInsert;
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -44,13 +43,14 @@ public class DataQualityDAO {
     private static final Logger LOGGER = Logger.getLogger(DataQualityDAO.class);
     @Autowired
     SessionFactory sessionFactory;
-
+    private static final String PROCESSID="process.processId";
+    private static final String CONFIGGROUP="configGroup";
     public void deleteDQSetup(int pid) {
         Session session = sessionFactory.openSession();
         try {
             session.beginTransaction();
-            Criteria deletePropertiesCriteria = session.createCriteria(Properties.class).add(Restrictions.eq("process.processId", pid));
-            deletePropertiesCriteria.add(Restrictions.eq("configGroup", "dq"));
+            Criteria deletePropertiesCriteria = session.createCriteria(Properties.class).add(Restrictions.eq(PROCESSID, pid));
+            deletePropertiesCriteria.add(Restrictions.eq(CONFIGGROUP, "dq"));
             List<Properties> deletingProperties = deletePropertiesCriteria.list();
             Iterator<Properties> iterator = deletingProperties.iterator();
             while (iterator.hasNext()) {
@@ -75,13 +75,13 @@ public class DataQualityDAO {
         try {
             session.beginTransaction();
             Criteria propertiesCriteria = session.createCriteria(Properties.class);
-            propertiesCriteria.add(Restrictions.eq("configGroup", "dq"));
+            propertiesCriteria.add(Restrictions.eq(CONFIGGROUP, "dq"));
             propertiesCriteria.setProjection(Projections.distinct(Projections.property("process")));
             int counter = propertiesCriteria.list().size();
             LOGGER.info("Distinct process id count: " + counter);
             Criteria listPropertiesCriteria = session.createCriteria(Properties.class);
-            listPropertiesCriteria.add(Restrictions.eq("configGroup", "dq"));
-            listPropertiesCriteria.addOrder(Order.desc("process.processId"));
+            listPropertiesCriteria.add(Restrictions.eq(CONFIGGROUP, "dq"));
+            listPropertiesCriteria.addOrder(Order.desc(PROCESSID));
             listPropertiesCriteria.setFirstResult(startPage).setMaxResults(pageSize);
             List<Properties> propertiesList = listPropertiesCriteria.list();
 
@@ -113,18 +113,23 @@ public class DataQualityDAO {
     }
 
 
-    public List<com.wipro.ats.bdre.md.beans.table.Properties> insertDQSetup(DQSetupInfo dqSetupInfo) {
+    public List<com.wipro.ats.bdre.md.beans.table.Properties> insertDQSetup(DQSetupInfo dqSetupInfo,String username) {
         Session session = sessionFactory.openSession();
         List<com.wipro.ats.bdre.md.beans.table.Properties> tablePropertiesList = new ArrayList<com.wipro.ats.bdre.md.beans.table.Properties>();
 
         try {
             session.beginTransaction();
+            UserRoles userRoles=new UserRoles();
+            Criteria criteria = session.createCriteria(UserRoles.class).add(Restrictions.eq("users.username", username)).addOrder(Order.asc("userRoleId"));
+            if (criteria.list()!=null){
+                userRoles = (UserRoles) criteria.list().get(0);
+            }
             LOGGER.info("process came in insertDQ");
             com.wipro.ats.bdre.md.dao.jpa.Process jpaProcess = new com.wipro.ats.bdre.md.dao.jpa.Process();
             jpaProcess.setAddTs(new Date());
             jpaProcess.setEditTs(new Date());
-            jpaProcess.setDescription("Data Quality Job");
-            jpaProcess.setProcessName("DQ Job");
+            jpaProcess.setDescription( dqSetupInfo.getDescription());
+            jpaProcess.setProcessName( dqSetupInfo.getProcessName());
             BusDomain busDomain = new BusDomain();
             busDomain.setBusDomainId(dqSetupInfo.getBusDomainId());
             jpaProcess.setBusDomain(busDomain);
@@ -135,46 +140,44 @@ public class DataQualityDAO {
             jpaProcess.setDeleteFlag(false);
             jpaProcess.setEnqueuingProcessId(dqSetupInfo.getEnqId());
             jpaProcess.setNextProcessId(" ");
-            WorkflowType workflowType = (WorkflowType) session.get(WorkflowType.class, 1);
+            if (dqSetupInfo.getWorkflowTypeId()!=null){
+            WorkflowType workflowType = (WorkflowType) session.get(WorkflowType.class, dqSetupInfo.getWorkflowTypeId());
             jpaProcess.setWorkflowType(workflowType);
-            ProcessValidateInsert processValidateInsert = new ProcessValidateInsert();
-            boolean triggerCheck;
-            Integer parentProcessId;
+            }
+            else
+            {
+                WorkflowType workflowType = (WorkflowType) session.get(WorkflowType.class, 1);
+                jpaProcess.setWorkflowType(workflowType);
+            }
+            PermissionType permissionType=new PermissionType();
+            permissionType.setPermissionTypeId(7);
+            jpaProcess.setPermissionTypeByUserAccessId(permissionType);
+            PermissionType permissionType1=new PermissionType();
+            permissionType1.setPermissionTypeId(4);
+            jpaProcess.setPermissionTypeByGroupAccessId(permissionType1);
+            PermissionType permissionType2=new PermissionType();
+            permissionType2.setPermissionTypeId(0);
+            jpaProcess.setPermissionTypeByOthersAccessId(permissionType2);
+            jpaProcess.setUserRoles(userRoles);
+            Users users=new Users();
+            users.setUsername(username);
+            jpaProcess.setUsers(users);
+            Integer parentProcessId = (Integer) session.save(jpaProcess);
 
-            Process jpaProcessParent = null;
-            if (jpaProcess.getProcess() != null) {
-                jpaProcessParent = (Process) session.get(Process.class, jpaProcess.getProcess().getProcessId());
-            }
-            if (jpaProcess.getProcess() != null) {
-                triggerCheck = processValidateInsert.ProcessTypeValidator(jpaProcess, jpaProcessParent);
-                if (triggerCheck == true) {
-                    parentProcessId = (Integer) session.save(jpaProcess);
-                } else {
-                    throw new MetadataException("error occured");
-                }
-            } else {
-                triggerCheck = processValidateInsert.ProcessTypeValidator(jpaProcess, jpaProcessParent);
-                if (triggerCheck == true) {
-                    parentProcessId = (Integer) session.save(jpaProcess);
-                } else {
-                    throw new MetadataException("error occured");
-                }
-            }
             LOGGER.info("inserted ppid is " + parentProcessId);
 
             com.wipro.ats.bdre.md.dao.jpa.Process jpaProcessStep = new com.wipro.ats.bdre.md.dao.jpa.Process();
             jpaProcessStep.setAddTs(new Date());
             jpaProcessStep.setEditTs(new Date());
-            jpaProcessStep.setDescription("Data Quality Step");
-            jpaProcessStep.setProcessName("DQ Step");
+            jpaProcessStep.setDescription(dqSetupInfo.getDescription() );
+            jpaProcessStep.setProcessName("SubProcess of "+dqSetupInfo.getProcessName());
             BusDomain busDomainStep = new BusDomain();
             busDomainStep.setBusDomainId(dqSetupInfo.getBusDomainId());
             jpaProcessStep.setBusDomain(busDomainStep);
             ProcessType processTypeStep = new ProcessType();
             processTypeStep.setProcessTypeId(16);
             jpaProcessStep.setProcessType(processTypeStep);
-            Process parentProcessStep = new Process();
-            parentProcessStep.setProcessId(parentProcessId);
+            Process parentProcessStep = (Process)session.get(Process.class,parentProcessId);
 
             jpaProcessStep.setProcess(parentProcessStep);
             jpaProcessStep.setDeleteFlag(false);
@@ -187,52 +190,12 @@ public class DataQualityDAO {
             jpaProcessStep.setNextProcessId(parentProcessId.toString());
             WorkflowType workflowTypeStep = (WorkflowType) session.get(WorkflowType.class, 1);
             jpaProcessStep.setWorkflowType(workflowTypeStep);
-            Integer subProcessId = null;
-            Process jpaProcessChild = null;
-            if (jpaProcessStep.getProcess() != null) {
-                jpaProcessChild = (Process) session.get(Process.class, jpaProcessStep.getProcess().getProcessId());
-            }
-            if (jpaProcessStep.getProcess() != null) {
-                triggerCheck = processValidateInsert.ProcessTypeValidator(jpaProcessStep, jpaProcessChild);
-                if (triggerCheck == true) {
-                    parentProcessId = (Integer) session.save(jpaProcessStep);
-                } else {
-                    throw new MetadataException("error occured");
-                }
-            } else {
-                triggerCheck = processValidateInsert.ProcessTypeValidator(jpaProcessStep, jpaProcessChild);
-                if (triggerCheck == true) {
-                    subProcessId = (Integer) session.save(jpaProcessStep);
-                } else {
-                    throw new MetadataException("error occured");
-                }
-            }
-
+            Integer subProcessId = (Integer) session.save(jpaProcessStep);
             LOGGER.info("inserted subProcessId is " + subProcessId);
 
             //Parent process updated
             jpaProcess.setNextProcessId(subProcessId.toString());
-            Process jpaProcessParentUpdate = null;
-            if (jpaProcess.getProcess() != null) {
-                jpaProcessParentUpdate = (Process) session.get(Process.class, jpaProcess.getProcess().getProcessId());
-            }
-            if (jpaProcess.getProcess() != null) {
-                triggerCheck = processValidateInsert.ProcessTypeValidator(jpaProcess, jpaProcessParentUpdate);
-                if (triggerCheck == true) {
-                    session.update(jpaProcess);
-                } else {
-                    throw new MetadataException("error occured");
-                }
-            } else {
-                triggerCheck = processValidateInsert.ProcessTypeValidator(jpaProcess, jpaProcessParentUpdate);
-                if (triggerCheck == true) {
-                    session.update(jpaProcess);
-                } else {
-                    throw new MetadataException("error occured");
-                }
-            }
-
-
+            session.update(jpaProcess);
             Properties userName = new Properties();
 
             userName.setProcess(jpaProcessStep);
@@ -306,7 +269,7 @@ public class DataQualityDAO {
 
 
             Criteria countCriteria = session.createCriteria(Properties.class).add(Restrictions.eq("id.processId", subProcessId));
-            countCriteria.add(Restrictions.eq("configGroup", dqSetupInfo.getConfigGroup()));
+            countCriteria.add(Restrictions.eq(CONFIGGROUP, dqSetupInfo.getConfigGroup()));
 
             List<Properties> jpaPropertiesList = countCriteria.list();
             int counter = jpaPropertiesList.size();
@@ -350,7 +313,7 @@ public class DataQualityDAO {
             LOGGER.info(" propertiesId1 setPropKey" + propertiesId1.getPropKey());
             LOGGER.info("dqSetupInfo.getConfigGroup() " + dqSetupInfo.getConfigGroup());
             Criteria updatePropertiesCriteria1 = session.createCriteria(Properties.class).add(Restrictions.eq("id", propertiesId1));
-            updatePropertiesCriteria1.add(Restrictions.eq("configGroup", dqSetupInfo.getConfigGroup()));
+            updatePropertiesCriteria1.add(Restrictions.eq(CONFIGGROUP, dqSetupInfo.getConfigGroup()));
             Properties updatingProperties1 = (Properties) updatePropertiesCriteria1.uniqueResult();
             LOGGER.info("updating propertiy is " + updatingProperties1);
             updatingProperties1.setPropValue(dqSetupInfo.getRulesUserNameValue());
@@ -361,7 +324,7 @@ public class DataQualityDAO {
             propertiesId2.setProcessId(dqSetupInfo.getSubProcessId());
             propertiesId2.setPropKey(dqSetupInfo.getRulesPassword());
             Criteria updatePropertiesCriteria2 = session.createCriteria(Properties.class).add(Restrictions.eq("id", propertiesId2));
-            updatePropertiesCriteria2.add(Restrictions.eq("configGroup", dqSetupInfo.getConfigGroup()));
+            updatePropertiesCriteria2.add(Restrictions.eq(CONFIGGROUP, dqSetupInfo.getConfigGroup()));
             Properties updatingProperties2 = (Properties) updatePropertiesCriteria2.uniqueResult();
             updatingProperties2.setPropValue(dqSetupInfo.getRulesPasswordValue());
             updatingProperties2.setDescription(dqSetupInfo.getDescription());
@@ -371,7 +334,7 @@ public class DataQualityDAO {
             propertiesId3.setProcessId(dqSetupInfo.getSubProcessId());
             propertiesId3.setPropKey(dqSetupInfo.getRulesPackage());
             Criteria updatePropertiesCriteria3 = session.createCriteria(Properties.class).add(Restrictions.eq("id", propertiesId3));
-            updatePropertiesCriteria3.add(Restrictions.eq("configGroup", dqSetupInfo.getConfigGroup()));
+            updatePropertiesCriteria3.add(Restrictions.eq(CONFIGGROUP, dqSetupInfo.getConfigGroup()));
             Properties updatingProperties3 = (Properties) updatePropertiesCriteria3.uniqueResult();
             updatingProperties3.setPropValue(dqSetupInfo.getRulesPackageValue());
             updatingProperties3.setDescription(dqSetupInfo.getDescription());
@@ -381,7 +344,7 @@ public class DataQualityDAO {
             propertiesId4.setProcessId(dqSetupInfo.getSubProcessId());
             propertiesId4.setPropKey(dqSetupInfo.getFileDelimiterRegex());
             Criteria updatePropertiesCriteria4 = session.createCriteria(Properties.class).add(Restrictions.eq("id", propertiesId4));
-            updatePropertiesCriteria4.add(Restrictions.eq("configGroup", dqSetupInfo.getConfigGroup()));
+            updatePropertiesCriteria4.add(Restrictions.eq(CONFIGGROUP, dqSetupInfo.getConfigGroup()));
             Properties updatingProperties4 = (Properties) updatePropertiesCriteria4.uniqueResult();
             updatingProperties4.setPropValue(dqSetupInfo.getFileDelimiterRegexValue());
             updatingProperties4.setDescription(dqSetupInfo.getDescription());
@@ -391,14 +354,14 @@ public class DataQualityDAO {
             propertiesId5.setProcessId(dqSetupInfo.getSubProcessId());
             propertiesId5.setPropKey(dqSetupInfo.getMinPassThresholdPercent());
             Criteria updatePropertiesCriteria5 = session.createCriteria(Properties.class).add(Restrictions.eq("id", propertiesId5));
-            updatePropertiesCriteria5.add(Restrictions.eq("configGroup", dqSetupInfo.getConfigGroup()));
+            updatePropertiesCriteria5.add(Restrictions.eq(CONFIGGROUP, dqSetupInfo.getConfigGroup()));
             Properties updatingProperties5 = (Properties) updatePropertiesCriteria5.uniqueResult();
             updatingProperties5.setPropValue(dqSetupInfo.getMinPassThresholdPercentValue());
             updatingProperties5.setDescription(dqSetupInfo.getDescription());
             session.update(updatingProperties5);
 
-            Criteria countCriteria = session.createCriteria(Properties.class).add(Restrictions.eq("process.processId", dqSetupInfo.getSubProcessId()));
-            countCriteria.add(Restrictions.eq("configGroup", dqSetupInfo.getConfigGroup()));
+            Criteria countCriteria = session.createCriteria(Properties.class).add(Restrictions.eq(PROCESSID, dqSetupInfo.getSubProcessId()));
+            countCriteria.add(Restrictions.eq(CONFIGGROUP, dqSetupInfo.getConfigGroup()));
             List<Properties> jpaPropertiesList = countCriteria.list();
             int counter = jpaPropertiesList.size();
             Iterator<Properties> iterator = jpaPropertiesList.iterator();

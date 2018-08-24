@@ -1,6 +1,6 @@
 package com.wipro.ats.bdre.imcrawler.model;
 
-import com.wipro.ats.bdre.imcrawler.jpa.Pendingurlsdb;
+import com.wipro.ats.bdre.md.dao.jpa.Pendingurlsdb;
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -69,7 +69,9 @@ public class PendingUrlsDBDao {
         session.beginTransaction();
         Long longid = new Long (id.intValue());
         Pendingurlsdb pendingurlsdb=(Pendingurlsdb)session.get(Pendingurlsdb.class,longid);
-        session.delete(pendingurlsdb);
+        //delete only if it is present from before i.e. not deleted by other mapper
+        //if(pendingurlsdb != null)
+            session.delete(pendingurlsdb);
         session.getTransaction().commit();
     }
 }

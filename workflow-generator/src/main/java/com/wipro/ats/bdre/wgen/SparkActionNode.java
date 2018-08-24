@@ -76,18 +76,11 @@ public class SparkActionNode extends GenericActionNode {
                 "        <main-class>org.apache.spark.deploy.SparkSubmit</main-class>\n" +
                 "        <arg>--class</arg>\n");
         ret.append(getAppMainClass(getId(), "spark-main"));
-       /* ret.append(        "        <arg>--master</arg>\n");
-        ret.append(        "        <arg>yarn</arg>\n");
-        ret.append(        "        <arg>--deploy-mode</arg>\n");
-        ret.append(        "        <arg>cluster</arg>\n");*/
         ret.append(getConf(getId(), "spark-conf"));
         ret.append("        <arg>" + getJarName(getId(), "spark-jar") + "</arg>\n");
-        ret.append("        <arg>${wf:actionData(\"" + fileListNode.getName() + "\")[\"file-list\"]}</arg>\n");
-        ret.append("        <arg>/spark-output/"+getId()+"/${wf:actionData(\"init-job\")[\"instance-exec-id\"]}</arg>\n");
-        ret.append("        <arg>"+getId()+"</arg>");
         ret.append(getAppArgs(getId(), "app-args"));
-        ret.append("        <file>"+getJarName(getId(), "spark-jar")+"</file>\n");
-        ret.append("     </java>\n"+
+        ret.append("        <file>" + getJarName(getId(), "spark-jar") + "</file>\n");
+        ret.append("     </java>\n" +
                 "        <ok to=\"" + getToNode().getName() + "\"/>\n" +
                 "        <error to=\"" + getTermNode().getName() + "\"/>\n" +
                 "    </action>");
@@ -107,7 +100,7 @@ public class SparkActionNode extends GenericActionNode {
         java.util.Properties jarPath = getProperties.getProperties(getId().toString(), configGroup);
         Enumeration e = jarPath.propertyNames();
         StringBuilder addJarPath = new StringBuilder();
-        if (jarPath.size() != 0) {
+        if (!jarPath.isEmpty()) {
             while (e.hasMoreElements()) {
                 String key = (String) e.nextElement();
                 addJarPath.append(jarPath.getProperty(key));
@@ -131,7 +124,7 @@ public class SparkActionNode extends GenericActionNode {
         java.util.Properties listForParams = getProperties.getProperties(getId().toString(), configGroup);
         Enumeration e = listForParams.propertyNames();
         StringBuilder addParams = new StringBuilder();
-        if (listForParams.size() != 0) {
+        if (!listForParams.isEmpty()) {
             while (e.hasMoreElements()) {
                 String key = (String) e.nextElement();
                 addParams.append("        <arg>--" + key + "</arg>\n");
@@ -153,7 +146,7 @@ public class SparkActionNode extends GenericActionNode {
         java.util.Properties listForParams = getProperties.getProperties(getId().toString(), configGroup);
         Enumeration e = listForParams.propertyNames();
         StringBuilder addParams = new StringBuilder();
-        if (listForParams.size() != 0) {
+        if (!listForParams.isEmpty()) {
             while (e.hasMoreElements()) {
                 String key = (String) e.nextElement();
                 addParams.append("        <arg>" + listForParams.getProperty(key) + "</arg>\n");
@@ -180,7 +173,7 @@ public class SparkActionNode extends GenericActionNode {
         java.util.Properties className = getProperties.getProperties(getId().toString(), configGroup);
         Enumeration e = className.propertyNames();
         StringBuilder addClassName = new StringBuilder();
-        if (className.size() != 0) {
+        if (!className.isEmpty()) {
             while (e.hasMoreElements()) {
                 String key = (String) e.nextElement();
                 addClassName.append("        <arg>" + className.getProperty(key) + "</arg>\n");

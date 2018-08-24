@@ -16,11 +16,8 @@ package com.wipro.ats.bdre.md.dao;
 
 import com.wipro.ats.bdre.exception.MetadataException;
 import com.wipro.ats.bdre.md.beans.ProcessInfo;
-import com.wipro.ats.bdre.md.dao.jpa.InstanceExec;
+import com.wipro.ats.bdre.md.dao.jpa.*;
 import com.wipro.ats.bdre.md.dao.jpa.Process;
-import com.wipro.ats.bdre.md.dao.jpa.Properties;
-import com.wipro.ats.bdre.md.dao.jpa.PropertiesId;
-import com.wipro.ats.bdre.md.triggers.ProcessValidateInsert;
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -35,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by MR299389 on 10/16/2015.
@@ -45,37 +43,72 @@ public class ProcessDAO {
     private static final Logger LOGGER = Logger.getLogger(ProcessDAO.class);
     @Autowired
     SessionFactory sessionFactory;
+    private static final String PROCESS="process";
+    private static final String USERNAME="users.username";
+    private static final String DELETE_FLAG="deleteFlag";
+    private static final String PARENTPROCESSID="process.processId";
+    private static final String PROCESSID="processId";
+    private static final String PROCESSCODE="processCode";
+    private static final String ACCESSGRANTED="ACCESS GRANTED";
+    private static final String ACCESSDENIED="ACCESS DENIED";
 
-    public List<com.wipro.ats.bdre.md.dao.jpa.Process> list(Integer pid, Integer pageNum, Integer numResults) {
+    public List<com.wipro.ats.bdre.md.dao.jpa.Process> list(Integer pid, Integer pageNum, Integer numResults,String userName) {
         Session session = sessionFactory.openSession();
         List<Process> processes = new ArrayList<Process>();
         try {
             session.beginTransaction();
-
-
             Process argument = new Process();
             Process process = new Process();
             if (pid != null) {
                 argument.setProcessId(pid);
                 process = (Process) session.get(Process.class, pid);
             }
-            Criteria checkSubProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq("process", argument)).add(Restrictions.eq("deleteFlag", false));
+            Criteria checkSubProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq(PROCESS, argument)).add(Restrictions.eq(DELETE_FLAG, false));
 
             if (pid == null) {
-                Criteria criteria = session.createCriteria(Process.class).add(Restrictions.isNull("process.processId")).add(Restrictions.eq("deleteFlag", false))
-                        .addOrder(Order.desc("processId"));
-                criteria.setFirstResult(pageNum);
-                criteria.setMaxResults(numResults);
-                processes = criteria.list();
-            } else if (checkSubProcessCriteria.list().size() == 0 && process.getProcessId() == pid) {
-                Criteria listOfRelatedSP = session.createCriteria(Process.class).add(Restrictions.eq("processId", process.getProcess().getProcessId())).add(Restrictions.eq("deleteFlag", false))
-                        .addOrder(Order.desc("processId"));
+
+                Criteria roleCriteria = session.createCriteria(UserRoles.class).add(Restrictions.eq("users.username", userName));
+                List<UserRoles> userRoles = roleCriteria.list();
+                List<String>   userRoleListOfLoggedUser=new ArrayList<>();
+                for (UserRoles userRoles1 : userRoles){
+                   userRoleListOfLoggedUser.add(userRoles1.getRole());
+                }
+                List<Integer>   userRoleIdListOfLoggedUser=new ArrayList<>();
+                Criteria userRoleIdCriteria = session.createCriteria(UserRoles.class).add(Restrictions.in("role", userRoleListOfLoggedUser)).setProjection(Projections.property("userRoleId"));
+                userRoleIdListOfLoggedUser=userRoleIdCriteria.list();
+
+                if(userRoleListOfLoggedUser.contains("ROLE_ADMIN")){
+                    Criteria criteria = session.createCriteria(Process.class).add(Restrictions.isNull(PARENTPROCESSID)).add(Restrictions.eq(DELETE_FLAG, false))
+                            .addOrder(Order.desc(PROCESSID));
+                    criteria.setFirstResult(pageNum);
+                    criteria.setMaxResults(numResults);
+                    processes = criteria.list();
+                }
+                else {
+                    Criteria criteria = session.createCriteria(Process.class).
+                            add(Restrictions.isNull(PARENTPROCESSID)).
+                            add(Restrictions.eq(DELETE_FLAG, false)).
+                            addOrder(Order.desc(PROCESSID)).
+                            add(Restrictions.disjunction().
+                            add(Restrictions.and(Restrictions.eq("users.username",userName),Restrictions.gt("permissionTypeByUserAccessId.permissionTypeId",3))).
+                            add(Restrictions.and(Restrictions.in("userRoles.userRoleId",userRoleIdListOfLoggedUser),Restrictions.gt("permissionTypeByGroupAccessId.permissionTypeId",3))).
+                            add(Restrictions.and(Restrictions.not(Restrictions.in("userRoles.userRoleId",userRoleIdListOfLoggedUser)),Restrictions.gt("permissionTypeByOthersAccessId.permissionTypeId",3))));
+                    criteria.setFirstResult(pageNum);
+                    criteria.setMaxResults(numResults);
+                    LOGGER.info("size of list is " + criteria.list().size());
+                    processes = criteria.list();
+                }
+
+
+            } else if (checkSubProcessCriteria.list().isEmpty() && process.getProcessId() == pid) {
+                Criteria listOfRelatedSP = session.createCriteria(Process.class).add(Restrictions.eq(PROCESSID, process.getProcess().getProcessId())).add(Restrictions.eq(DELETE_FLAG, false))
+                        .addOrder(Order.desc(PROCESSID));
                 listOfRelatedSP.setFirstResult(pageNum);
                 listOfRelatedSP.setMaxResults(numResults);
                 processes = listOfRelatedSP.list();
             } else {
-                Criteria processList = session.createCriteria(Process.class).add(Restrictions.isNull("process.processId")).add(Restrictions.eq("processId", pid))
-                        .add(Restrictions.eq("deleteFlag", false));
+                Criteria processList = session.createCriteria(Process.class).add(Restrictions.isNull(PARENTPROCESSID)).add(Restrictions.eq(PROCESSID, pid))
+                        .add(Restrictions.eq(DELETE_FLAG, false));
                 processList.setFirstResult(pageNum);
                 processList.setMaxResults(numResults);
                 processes = processList.list();
@@ -103,18 +136,18 @@ public class ProcessDAO {
                 argument.setProcessId(pid);
                 process = (Process) session.get(Process.class, pid);
             }
-            Criteria checkSubProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq("process", argument)).add(Restrictions.eq("deleteFlag", false));
+            Criteria checkSubProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq(PROCESS, argument)).add(Restrictions.eq(DELETE_FLAG, false));
 
             if (pid == null) {
-                Criteria criteria = session.createCriteria(Process.class).add(Restrictions.isNull("process.processId")).add(Restrictions.eq("deleteFlag", false));
+                Criteria criteria = session.createCriteria(Process.class).add(Restrictions.isNull(PARENTPROCESSID)).add(Restrictions.eq(DELETE_FLAG, false));
                 size = criteria.list().size();
-            } else if (checkSubProcessCriteria.list().size() == 0 && process.getProcessId() == pid) {
-                Criteria listOfRelatedSP = session.createCriteria(Process.class).add(Restrictions.eq("processId", process.getProcess().getProcessId())).add(Restrictions.eq("deleteFlag", false))
-                        .addOrder(Order.desc("processId"));
+            } else if (checkSubProcessCriteria.list().isEmpty() && process.getProcessId() == pid) {
+                Criteria listOfRelatedSP = session.createCriteria(Process.class).add(Restrictions.eq(PROCESSID, process.getProcess().getProcessId())).add(Restrictions.eq(DELETE_FLAG, false))
+                        .addOrder(Order.desc(PROCESSID));
                 size = listOfRelatedSP.list().size();
             } else {
-                Criteria processList = session.createCriteria(Process.class).add(Restrictions.isNull("process.processId")).add(Restrictions.eq("processId", pid))
-                        .add(Restrictions.eq("deleteFlag", false));
+                Criteria processList = session.createCriteria(Process.class).add(Restrictions.isNull(PARENTPROCESSID)).add(Restrictions.eq(PROCESSID, pid))
+                        .add(Restrictions.eq(DELETE_FLAG, false));
                 LOGGER.info("size of pro is " + processList.list().size());
                 size = processList.list().size();
             }
@@ -143,22 +176,8 @@ public class ProcessDAO {
         Integer id = null;
         try {
             session.beginTransaction();
-            ProcessValidateInsert processValidateInsert=new ProcessValidateInsert();
-            Process parentProcess = null;
-            if (process.getProcess() != null) {
-                parentProcess = (Process) session.get(Process.class, process.getProcess().getProcessId());
-
-                boolean triggerCheck = processValidateInsert.ProcessTypeValidator(process, parentProcess);
-                if (triggerCheck == true) {
-                    id = (Integer) session.save(process);
-                    session.getTransaction().commit();
-                } else throw new MetadataException("error occured in exception");
-            }
-            else
-            {
-                id=(Integer)session.save(process);
-                session.getTransaction().commit();
-            }
+            id = (Integer) session.save(process);
+            session.getTransaction().commit();
         } catch (MetadataException e) {
             session.getTransaction().rollback();
             LOGGER.error(e);
@@ -172,37 +191,9 @@ public class ProcessDAO {
         Session session = sessionFactory.openSession();
         try {
             session.beginTransaction();
-            boolean triggerCheck;
-            ProcessValidateInsert processValidateInsert=new ProcessValidateInsert();
-            Process parentProcess = null;
-            if (process.getProcess() != null) {
-                parentProcess = (Process) session.get(Process.class, process.getProcess().getProcessId());
-            }
-            if(process.getProcess()!=null)
-            {
-                triggerCheck=processValidateInsert.ProcessTypeValidator(process,parentProcess);
-                if(triggerCheck==true)
-                {
-                    session.update(process);
-                }
-                else
-                {
-                    throw new MetadataException("error occured trigger violation");
-                }
-            }
-            else {
-                triggerCheck=processValidateInsert.ProcessTypeValidator(process,parentProcess);
-                if(triggerCheck==true)
-                {
-                    session.update(process);
-                }
-                else
-                {
-                    throw new MetadataException("error occured trigger violation");
-                }
-
-            }
-                session.getTransaction().commit();
+            process.setEditTs(new Date());
+            session.update(process);
+            session.getTransaction().commit();
         } catch (MetadataException e) {
             session.getTransaction().rollback();
             LOGGER.error(e);
@@ -218,33 +209,30 @@ public class ProcessDAO {
             session.beginTransaction();
             Process process = (Process) session.get(Process.class, id);
             process.setDeleteFlag(true);
-
-            boolean triggerCheck;
-            ProcessValidateInsert processValidateInsert=new ProcessValidateInsert();
-            Process parentProcess = null;
-            if (process.getProcess() != null) {
-                parentProcess = (Process) session.get(Process.class, process.getProcess().getProcessId());
-            }
-            if(process.getProcess()!=null)
-            {
-                triggerCheck=processValidateInsert.ProcessTypeValidator(process,parentProcess);
-                if(triggerCheck==true)
-                {
-                    session.delete(process);
-                    session.getTransaction().commit();
-                }
-                else
-                {
-                    throw new MetadataException("error occured trigger violation");
+            session.update(process);
+            List<Process> subProcessList = subProcesslist(id);
+            if (!subProcessList.isEmpty()){
+                for(Process subProcess : subProcessList){
+                    subProcess.setDeleteFlag(true);
+                    session.update(subProcess);
                 }
             }
-            else {
-                session.delete(process);
-                session.getTransaction().commit();
-            }
+            session.getTransaction().commit();
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+    }
 
-           // session.update(process);
-//            session.getTransaction().commit();
+    public void testDelete(Integer id) {
+        Session session = sessionFactory.openSession();
+        try {
+            session.beginTransaction();
+            Process process = (Process) session.get(Process.class, id);
+            session.delete(process);
+            session.getTransaction().commit();
         } catch (MetadataException e) {
             session.getTransaction().rollback();
             LOGGER.error(e);
@@ -257,12 +245,18 @@ public class ProcessDAO {
         Session session = sessionFactory.openSession();
         session.beginTransaction();
         Process parentProcess = (Process) session.get(Process.class, processId);
-        Criteria listSubProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq("process", parentProcess)).add(Restrictions.eq("deleteFlag", false));
+        Criteria listSubProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq(PROCESS, parentProcess)).add(Restrictions.eq(DELETE_FLAG, false));
         List<Process> subProcesses = listSubProcessCriteria.list();
         LOGGER.info("Total number of sub processes:" + listSubProcessCriteria.list().size());
         session.getTransaction().commit();
         session.close();
         return subProcesses;
+    }
+
+    public String getParentProcessTypeId(Integer pid){
+        Process parentProcess = get(pid);
+        return Integer.toString(parentProcess.getProcessType().getProcessTypeId());
+
     }
 
     //fetching parent process along with its sub processes
@@ -272,7 +266,7 @@ public class ProcessDAO {
         List<Process> processSubProcessList = new ArrayList<Process>();
         try {
             Process parentProcess = (Process) session.get(Process.class, processId);
-            Criteria checkProcessSubProcessList = session.createCriteria(Process.class).add(Restrictions.or(Restrictions.eq("processId", processId), Restrictions.eq("process", parentProcess)));
+            Criteria checkProcessSubProcessList = session.createCriteria(Process.class).add(Restrictions.or(Restrictions.eq(PROCESSID, processId), Restrictions.eq(PROCESS, parentProcess))).add(Restrictions.eq(DELETE_FLAG, false));
             processSubProcessList = checkProcessSubProcessList.list();
             session.getTransaction().commit();
         } catch (MetadataException e) {
@@ -284,6 +278,68 @@ public class ProcessDAO {
         return processSubProcessList;
     }
 
+    public List<Process> selectProcessList(String processCode,String username) {
+        Session session = sessionFactory.openSession();
+        session.beginTransaction();
+        List<Process> processSubProcessList = new ArrayList<Process>();
+        try {
+             Process parentProcess = (Process) session.createCriteria(Process.class).add(Restrictions.eq(PROCESSCODE,processCode)).add(Restrictions.eq(USERNAME,username)).uniqueResult();
+            Criteria checkProcessSubProcessList = session.createCriteria(Process.class).add(Restrictions.eq(PROCESS, parentProcess));
+            processSubProcessList = checkProcessSubProcessList.list();
+            processSubProcessList.add(parentProcess);
+            session.getTransaction().commit();
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return processSubProcessList;
+    }
+
+    public Process returnProcess(String processCode,String username) {
+
+        Session session = sessionFactory.openSession();
+        session.beginTransaction();
+        Process parentProcess=null;
+
+        try {
+           parentProcess = (Process) session.createCriteria(Process.class).add(Restrictions.eq(PROCESSCODE,processCode)).add(Restrictions.eq(USERNAME,username)).uniqueResult();
+            session.getTransaction().commit();
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return parentProcess;
+
+    }
+
+
+
+
+    public List<Process> returnProcesses(String processCode) {
+
+        Session session = sessionFactory.openSession();
+        session.beginTransaction();
+        List<Process> processes=new ArrayList<>();
+        try {
+            processes = session.createCriteria(Process.class).add(Restrictions.eq(PROCESSCODE,processCode)).list();
+            session.getTransaction().commit();
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return processes;
+
+    }
+
+
+
+
     public void updateProcessId(Integer oldProcessId, Integer newProcessId) {
         Session session = sessionFactory.openSession();
         try {
@@ -291,46 +347,17 @@ public class ProcessDAO {
             Process parentProcess = (Process) session.get(Process.class, newProcessId);
             Process nullProcess = new Process();
             nullProcess.setProcessId(null);
-            Criteria updateProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq("process", parentProcess));
+            Criteria updateProcessCriteria = session.createCriteria(Process.class).add(Restrictions.eq(PROCESS, parentProcess));
             if (parentProcess.getProcess().getProcessId() == null) {
-                boolean triggerCheck;
-                ProcessValidateInsert processValidateInsert=new ProcessValidateInsert();
                 List<Process> updateProcessList = updateProcessCriteria.list();
+
                 for (Process updateProcess : updateProcessList) {
                     updateProcess.setProcess(nullProcess);
-                    Process parentProcessCheck = null;
-                    if (updateProcess.getProcess() != null) {
-                        parentProcessCheck = (Process) session.get(Process.class, updateProcess.getProcess().getProcessId());
-                    }
-
-                    if(updateProcess.getProcess()!=null)
-                    {
-                        triggerCheck=processValidateInsert.ProcessTypeValidator(updateProcess,parentProcessCheck);
-                        if(triggerCheck==true)
-                        {
-                            session.update(updateProcess);
-                        }
-                        else
-                        {
-                            throw new MetadataException("error occured trigger violation");
-                        }
-                    }
-                    else {
-                        triggerCheck=processValidateInsert.ProcessTypeValidator(updateProcess,parentProcessCheck);
-                        if(triggerCheck==true)
-                        {
-                            session.update(updateProcess);
-                        }
-                        else
-                        {
-                            throw new MetadataException("error occured trigger violation");
-                        }
-                    }
-
-
+                    updateProcess.setEditTs(new Date());
+                    session.update(updateProcess);
                 }
             }
-            Criteria deletePropCriteria = session.createCriteria(Properties.class).add(Restrictions.eq("process", parentProcess));
+            Criteria deletePropCriteria = session.createCriteria(Properties.class).add(Restrictions.eq(PROCESS, parentProcess));
             List<Properties> deletePropertiesList = deletePropCriteria.list();
             for (Properties deleteProperty : deletePropertiesList) {
                 session.delete(deleteProperty);
@@ -340,40 +367,8 @@ public class ProcessDAO {
             }
             Process oldProcess = (Process) session.get(Process.class, oldProcessId);
             oldProcess.setProcessId(newProcessId);
-
-
-            boolean triggerCheck;
-            ProcessValidateInsert processValidateInsert=new ProcessValidateInsert();
-            Process parentProcessCheck = null;
-            if (oldProcess.getProcess() != null) {
-                parentProcessCheck = (Process) session.get(Process.class, oldProcess.getProcess().getProcessId());
-            }
-            if(oldProcess.getProcess()!=null)
-            {
-                triggerCheck=processValidateInsert.ProcessTypeValidator(oldProcess,parentProcessCheck);
-                if(triggerCheck==true)
-                {
-                    session.update(oldProcess);
-                }
-                else
-                {
-                    throw new MetadataException("error occured trigger violation");
-                }
-            }
-            else {
-                triggerCheck=processValidateInsert.ProcessTypeValidator(oldProcess,parentProcessCheck);
-                if(triggerCheck==true)
-                {
-                    session.update(oldProcess);
-                }
-                else
-                {
-                    throw new MetadataException("error occured trigger violation");
-                }
-            }
-
-
-
+            oldProcess.setEditTs(new Date());
+            session.update(oldProcess);
             session.getTransaction().commit();
         } catch (MetadataException e) {
             session.getTransaction().rollback();
@@ -387,21 +382,18 @@ public class ProcessDAO {
     public Process cloneProcess(Integer processId) {
         Session session = sessionFactory.openSession();
         Process newProcess = new Process();
-       /* insert into process (description,process_name, bus_domain_id, process_type_id, parent_process_id, can_recover, enqueuing_process_id, batch_cut_pattern, next_process_id, workflow_id,process_template_id)
-        select  description,concat(process_name, ' - copy'), bus_domain_id, process_type_id, parent_process_id, can_recover,0, batch_cut_pattern, '0', workflow_id,process_template_id from process where (process_id = p_id and delete_flag != 1)  ;
-*/
+        Process updateProcess=new Process();
 
         try {
             session.beginTransaction();
-            Criteria fetchReferenceProcess = session.createCriteria(Process.class).add(Restrictions.eq("processId", processId)).add(Restrictions.eq("deleteFlag", false));
+            Criteria fetchReferenceProcess = session.createCriteria(Process.class).add(Restrictions.eq(PROCESSID, processId)).add(Restrictions.eq(DELETE_FLAG, false));
 
             Process referencedProcess = (Process) fetchReferenceProcess.uniqueResult();
             Integer newProcessId = null;
-            if (fetchReferenceProcess.list().size() != 0) {
+            if (!fetchReferenceProcess.list().isEmpty()) {
                 newProcess.setProcessName(referencedProcess.getProcessName() + "-copy");
                 newProcess.setEnqueuingProcessId(0);
                 newProcess.setNextProcessId("0");
-
                 newProcess.setProcessType(referencedProcess.getProcessType());
                 newProcess.setWorkflowType(referencedProcess.getWorkflowType());
                 newProcess.setBusDomain(referencedProcess.getBusDomain());
@@ -413,41 +405,7 @@ public class ProcessDAO {
                 newProcess.setBatchCutPattern(referencedProcess.getBatchCutPattern());
                 newProcess.setDeleteFlag(referencedProcess.getDeleteFlag());
 
-
-                boolean triggerCheck;
-                ProcessValidateInsert processValidateInsert=new ProcessValidateInsert();
-                Process parentProcessCheck = null;
-                if (newProcess.getProcess() != null) {
-                    parentProcessCheck = (Process) session.get(Process.class, newProcess.getProcess().getProcessId());
-                }
-                if(newProcess.getProcess()!=null)
-                {
-                    triggerCheck=processValidateInsert.ProcessTypeValidator(newProcess,parentProcessCheck);
-                    if(triggerCheck==true)
-                    {
-                        newProcessId = (Integer) session.save(newProcess);
-                    }
-                    else
-                    {
-                        throw new MetadataException("error occured trigger violation");
-                    }
-                }
-                else {
-                    triggerCheck=processValidateInsert.ProcessTypeValidator(newProcess,parentProcessCheck);
-                    if(triggerCheck==true)
-                    {
-                        newProcessId = (Integer) session.save(newProcess);
-                    }
-                    else
-                    {
-                        throw new MetadataException("error occured trigger violation");
-                    }
-                }
-
-
-
-                //insert into properties (process_id,config_group,prop_key,prop_value,description) select (select last_insert_id() from process limit 1),config_group,prop_key,prop_value,description  from properties where process_id=p_id ;
-
+                newProcessId = (Integer) session.save(newProcess);
                 Criteria copyPropertiesCriteraia = session.createCriteria(Properties.class).add(Restrictions.eq("id.processId", processId));
                 List<Properties> insertProperties = copyPropertiesCriteraia.list();
                 for (Properties insertProperty : insertProperties) {
@@ -464,7 +422,11 @@ public class ProcessDAO {
                     property.setDescription(insertProperty.getDescription());
 
                     session.save(property);
+
                 }
+                updateProcess=(Process)session.get(Process.class,referencedProcess.getProcess().getProcessId());
+                updateProcess.setEditTs(new Date());
+                session.update(updateProcess);
             }
             session.getTransaction().commit();
         } catch (MetadataException e) {
@@ -489,11 +451,12 @@ public class ProcessDAO {
             Criteria checkProcessIdWithIEId = session.createCriteria(InstanceExec.class).add(Restrictions.eq("instanceExecId", instanceExecId));
             InstanceExec instanceExec = (InstanceExec) checkProcessIdWithIEId.uniqueResult();
             Integer processIdWithIEId = null;
-            if (checkProcessIdWithIEId.list().size() != 0) {
+            if (instanceExec!=null) {
                 processIdWithIEId = instanceExec.getProcess().getProcessId();
                 LOGGER.info("processIdWithIEId:" + processIdWithIEId);
             }
-            if (processIdWithIEId == processId) {
+            if (processId.equals(processIdWithIEId)) {
+
                 vStartTs = instanceExec.getStartTs();
                 vEndTs = instanceExec.getEndTs();
 
@@ -501,15 +464,15 @@ public class ProcessDAO {
                     vEndTs = new Date();
                 }
 
-                Criteria fetchProcessList = session.createCriteria(Process.class).add(Restrictions.or(Restrictions.eq("process.processId", processId), Restrictions.eq("processId", processId))).add(Restrictions.eq("deleteFlag", false));
+                Criteria fetchProcessList = session.createCriteria(Process.class).add(Restrictions.or(Restrictions.eq(PARENTPROCESSID, processId), Restrictions.eq(PROCESSID, processId))).add(Restrictions.eq(DELETE_FLAG, false));
                 List<Process> processList = fetchProcessList.list();
                 LOGGER.info("Process list size:" + fetchProcessList.list().size());
 
-                fetchProcessList.setProjection(Projections.property("processId"));
+                fetchProcessList.setProjection(Projections.property(PROCESSID));
                 List<Integer> processIdList = fetchProcessList.list();
                 LOGGER.info("process id list size:" + fetchProcessList.list().size());
-                if (processIdList.size() != 0) {
-                    Criteria fetchInstanceExecList = session.createCriteria(InstanceExec.class).add(Restrictions.ge("instanceExecId", instanceExecId)).add(Restrictions.in("process.processId", processIdList)).add(Restrictions.between("startTs", vStartTs, vEndTs));
+                if (!processIdList.isEmpty()) {
+                    Criteria fetchInstanceExecList = session.createCriteria(InstanceExec.class).add(Restrictions.ge("instanceExecId", instanceExecId)).add(Restrictions.in(PARENTPROCESSID, processIdList)).add(Restrictions.between("startTs", vStartTs, vEndTs));
                     List<InstanceExec> instanceExecList = fetchInstanceExecList.list();
                     LOGGER.info("instance exec list size:" + fetchInstanceExecList.list().size());
 
@@ -537,7 +500,7 @@ public class ProcessDAO {
                         processInfo.setDeleteFlag(process.getDeleteFlag());
 
                         for (InstanceExec instanceExec1 : instanceExecList) {
-                            if (instanceExec1.getProcess().getProcessId() == process.getProcessId()) {
+                            if (process.getProcessId().equals(instanceExec1.getProcess().getProcessId())){
 
                                 processInfo.setInstanceExecId(instanceExec1.getInstanceExecId());
                                 processInfo.setStartTs(instanceExec1.getStartTs());
@@ -553,12 +516,12 @@ public class ProcessDAO {
                 for (ProcessInfo processInfo : returnProcessList) {
                     processInfo.setCounter(returnProcessList.size());
                 }
-                if (returnProcessList.size() != 0) {
+                if (!returnProcessList.isEmpty()) {
                     LOGGER.info("processInfo bean:" + returnProcessList.get(0).getCounter());
                 }
 
             } else {
-                Criteria fetchProcessList = session.createCriteria(Process.class).add(Restrictions.or(Restrictions.eq("process.processId", processId), Restrictions.eq("processId", processId))).add(Restrictions.eq("deleteFlag", false));
+                Criteria fetchProcessList = session.createCriteria(Process.class).add(Restrictions.or(Restrictions.eq(PARENTPROCESSID, processId), Restrictions.eq(PROCESSID, processId))).add(Restrictions.eq(DELETE_FLAG, false));
                 List<Process> processList = fetchProcessList.list();
                 Integer sizeOfProcessList = fetchProcessList.list().size();
                 LOGGER.info("Process list size:" + sizeOfProcessList);
@@ -593,7 +556,407 @@ public class ProcessDAO {
         return returnProcessList;
     }
 
+public List<Process> createOneChildJob(Process parentProcess, Process childProcess, List<Properties> parentProps, List<Properties> childProps ){
+    Session session = sessionFactory.openSession();
+    Integer parentPid = null;
+    Integer childPid = null;
+    List<Process> processList=new ArrayList<>();
+    try {
+        session.beginTransaction();
+        parentPid = (Integer) session.save(parentProcess);
+        LOGGER.info("parent processId:"+parentPid);
+        parentProcess.setProcessId(parentPid);
+        childProcess.setProcess(parentProcess);
+        childProcess.setNextProcessId(parentPid.toString());
+
+        childPid= (Integer) session.save(childProcess);
+        LOGGER.info("child processId:"+childPid);
+
+        parentProcess.setNextProcessId(childPid.toString());
+        childProcess.setProcessId(childPid);
+        session.update(parentProcess);
+        if(parentProps!=null && !parentProps.isEmpty()){
+            for(Properties properties: parentProps){
+
+                properties.getId().setProcessId(parentPid);
+                properties.setProcess(parentProcess);
+                session.save(properties);
+            }
+        }
+
+        if(childProps!=null && !childProps.isEmpty()){
+            for(Properties properties: childProps){
+                properties.getId().setProcessId(childPid);
+                properties.setProcess(childProcess);
+                session.save(properties);
+            }
+        }
+        processList.add(parentProcess);
+        processList.add(childProcess);
+        session.getTransaction().commit();
+
+    } catch (MetadataException e) {
+        session.getTransaction().rollback();
+        LOGGER.error(e);
+    } finally {
+        session.close();
+    }
+    return processList;
+}
+    public List<Process> createHiveMigrationJob(Process parentProcess, List<Process> childProcesses, List<Properties> parentProperties) {
+        Session session = sessionFactory.openSession();
+        com.wipro.ats.bdre.md.dao.jpa.Process preprocessingProcess = null;
+        com.wipro.ats.bdre.md.dao.jpa.Process sourcestageloadProcess = null;
+        com.wipro.ats.bdre.md.dao.jpa.Process sourcetodeststagecopyProcess = null;
+        com.wipro.ats.bdre.md.dao.jpa.Process desttableloadProcess = null;
+        com.wipro.ats.bdre.md.dao.jpa.Process registerpartitionProcess = null;
+
+        Integer parentPid = null;
+        List<Process> processList = new ArrayList<Process>();
+        try {
+            session.beginTransaction();
+            parentPid = (Integer) session.save(parentProcess);
+            LOGGER.info("parent processId:" + parentPid);
+            parentProcess.setProcessId(parentPid);
+
+            if(parentProperties!=null && !parentProperties.isEmpty()){
+                for (Properties properties : parentProperties) {
+                    LOGGER.info("properties key"+properties.getId().getPropKey());
+                    properties.getId().setProcessId(parentPid);
+                    properties.setProcess(parentProcess);
+                    session.save(properties);
+                }
+            }
+
+
+            processList.add(parentProcess);
+            for (Process childProcess : childProcesses) {
+                childProcess.setProcess(parentProcess);
+                if (childProcess.getProcessType().getProcessTypeId() == 32){
+                    preprocessingProcess = childProcess;
+                    preprocessingProcess.setNextProcessId(parentPid.toString());
+                    preprocessingProcess.setProcessId((Integer) session.save(preprocessingProcess));
+                }else  if (childProcess.getProcessType().getProcessTypeId() == 33){
+                    sourcestageloadProcess = childProcess;
+                    sourcestageloadProcess.setNextProcessId(parentPid.toString());
+                    sourcestageloadProcess.setProcessId((Integer) session.save(sourcestageloadProcess));
+                }
+                else  if (childProcess.getProcessType().getProcessTypeId() == 34){
+                    sourcetodeststagecopyProcess = childProcess;
+                    sourcetodeststagecopyProcess.setNextProcessId(parentPid.toString());
+                    sourcetodeststagecopyProcess.setProcessId((Integer) session.save(sourcetodeststagecopyProcess));
+                }
+                else  if (childProcess.getProcessType().getProcessTypeId() == 35){
+                    desttableloadProcess = childProcess;
+                    desttableloadProcess.setNextProcessId(parentPid.toString());
+                    desttableloadProcess.setProcessId((Integer) session.save(desttableloadProcess));
+                }
+                else  if (childProcess.getProcessType().getProcessTypeId() == 36){
+                    registerpartitionProcess = childProcess;
+                    registerpartitionProcess.setNextProcessId(parentPid.toString());
+                    registerpartitionProcess.setProcessId((Integer) session.save(registerpartitionProcess));
+                }
+
+                processList.add(childProcess);
+            }
+            parentProcess.setNextProcessId(preprocessingProcess.getProcessId().toString());
+            preprocessingProcess.setNextProcessId(sourcestageloadProcess.getProcessId().toString());
+            sourcestageloadProcess.setNextProcessId(sourcetodeststagecopyProcess.getProcessId().toString());
+            sourcetodeststagecopyProcess.setNextProcessId(desttableloadProcess.getProcessId().toString());
+            desttableloadProcess.setNextProcessId(registerpartitionProcess.getProcessId().toString());
+
+            session.update(parentProcess);
+            session.update(preprocessingProcess);
+            session.update(sourcestageloadProcess);
+            session.update(sourcetodeststagecopyProcess);
+            session.update(desttableloadProcess);
+
+            session.getTransaction().commit();
+        }
+        catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return processList;
+    }
+
+    public List<Process> createAnalyticsAppJob(Process parentProcess, List<Process> childProcesses, List<Properties> appProperties) {
+        Session session = sessionFactory.openSession();
+        com.wipro.ats.bdre.md.dao.jpa.Process subProcess1 = null;
+
+        Integer parentPid = null;
+        Integer subProcessId = null;
+        List<Process> processList = new ArrayList<Process>();
+        try {
+            session.beginTransaction();
+            parentPid = (Integer) session.save(parentProcess);
+            LOGGER.info("parent processId:" + parentPid);
+            parentProcess.setProcessId(parentPid);
 
 
 
+
+            processList.add(parentProcess);
+            for (Process childProcess : childProcesses) {
+                childProcess.setProcess(parentProcess);
+                if (childProcess.getProcessType().getProcessTypeId() == 38){
+                    subProcess1 = childProcess;
+                    subProcess1.setNextProcessId(parentPid.toString());
+                    subProcessId = (Integer) session.save(subProcess1);
+                    subProcess1.setProcessId(subProcessId);
+                }
+
+                processList.add(childProcess);
+            }
+            parentProcess.setNextProcessId(subProcess1.getProcessId().toString());
+
+            session.update(parentProcess);
+
+
+            if(appProperties!=null && !appProperties.isEmpty()){
+                for (Properties properties : appProperties) {
+                    LOGGER.info("properties key"+properties.getId().getPropKey());
+                    properties.getId().setProcessId(subProcessId);
+                    properties.setProcess(subProcess1);
+                    session.save(properties);
+                }
+            }
+            session.getTransaction().commit();
+        }
+        catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return processList;
+    }
+    public List<Process> createDataloadJob(Process parentProcess, List<Process> childProcesses, List<Properties> parentProps, Map<Process,List<Properties>> childProps ){
+        Session session = sessionFactory.openSession();
+        Integer parentPid = null;
+        Process file2Raw = null;
+        Process raw2Stage = null;
+        Process stage2Base = null;
+        List<Process> processList=new ArrayList<Process>();
+        try {
+            session.beginTransaction();
+            parentPid = (Integer) session.save(parentProcess);
+            LOGGER.info("parent processId:"+parentPid);
+            parentProcess.setProcessId(parentPid);
+            for (Process childProcess : childProcesses){
+                childProcess.setProcess(parentProcess);
+                if (childProcess.getProcessType().getProcessTypeId() == 8){
+                    stage2Base = childProcess;
+                    stage2Base.setNextProcessId(parentPid.toString());
+                    stage2Base.setProcessId((Integer) session.save(stage2Base));
+                }else  if (childProcess.getProcessType().getProcessTypeId() == 7){
+                    raw2Stage = childProcess;
+                    raw2Stage.setNextProcessId(parentPid.toString());
+                    raw2Stage.setProcessId((Integer) session.save(raw2Stage));
+                }else  if (childProcess.getProcessType().getProcessTypeId() == 6){
+                    file2Raw = childProcess;
+                    file2Raw.setNextProcessId(parentPid.toString());
+                    file2Raw.setProcessId((Integer) session.save(file2Raw));
+                }
+            }
+
+            parentProcess.setNextProcessId(file2Raw.getProcessId().toString());
+            file2Raw.setNextProcessId(raw2Stage.getProcessId().toString());
+            raw2Stage.setNextProcessId(stage2Base.getProcessId().toString());
+
+            session.update(parentProcess);
+            session.update(file2Raw);
+            session.update(raw2Stage);
+
+            if(parentProps!=null && !parentProps.isEmpty()){
+                for(Properties properties: parentProps){
+
+                    properties.getId().setProcessId(parentPid);
+                    properties.setProcess(parentProcess);
+                    session.save(properties);
+                }
+            }
+            for(Process process : childProps.keySet()) {
+                List<Properties> childProperties = childProps.get(process);
+                if (childProperties != null && !childProperties.isEmpty()) {
+                    for (Properties properties : childProperties) {
+                        if(process.getProcessType().getProcessTypeId() == 6){
+                            properties.getId().setProcessId(file2Raw.getProcessId());
+                            properties.setProcess(file2Raw);
+                            session.save(properties);
+                        }else if(process.getProcessType().getProcessTypeId() == 7){
+                            properties.getId().setProcessId(raw2Stage.getProcessId());
+                            properties.setProcess(raw2Stage);
+                            session.save(properties);
+                        }else if(process.getProcessType().getProcessTypeId() == 8){
+                            properties.getId().setProcessId(stage2Base.getProcessId());
+                            properties.setProcess(stage2Base);
+                            session.save(properties);
+                        }
+                    }
+                }
+            }
+            processList.add(parentProcess);
+            processList.add(file2Raw);
+            processList.add(raw2Stage);
+            processList.add(stage2Base);
+            session.getTransaction().commit();
+
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+        return processList;
+    }
+
+public String securityCheck(Integer processId,String username,String action){
+    Session session = sessionFactory.openSession();
+    session.beginTransaction();
+    Process process = (Process) session.get(Process.class, processId);
+    Criteria criteria = session.createCriteria(UserRoles.class).add(Restrictions.eq(USERNAME, username));
+    List<UserRoles> userRoles = criteria.list();
+    List<String> userRolesNameList=new ArrayList<>();
+    String processCreater=process.getUserRoles().getRole();
+    for(UserRoles userRoles1:userRoles)
+    {
+        userRolesNameList.add(userRoles1.getRole());
+    }
+    session.getTransaction().commit();
+    session.close();
+    if (userRolesNameList.contains("ROLE_ADMIN"))
+        return "NOT REQUIRED";
+    List<Integer> readList=new ArrayList<>();
+    readList.add(4);
+    readList.add(6);
+    readList.add(7);
+    List<Integer> writeList=new ArrayList<>();
+    writeList.add(6);
+    writeList.add(7);
+    List<Integer> executeList=new ArrayList<>();
+    executeList.add(7);
+    if (process.getUsers().getUsername().equals(username))
+    {
+        switch (action) {
+            case "write": if (writeList.contains(process.getPermissionTypeByUserAccessId().getPermissionTypeId())
+                    || (userRolesNameList.contains(processCreater)&&writeList.contains(process.getPermissionTypeByGroupAccessId().getPermissionTypeId()))
+                    || (!userRolesNameList.contains(processCreater)&&writeList.contains(process.getPermissionTypeByOthersAccessId().getPermissionTypeId()))
+                    )
+            {
+                return ACCESSGRANTED;
+            }
+            else
+            {
+                LOGGER.info("user write");
+                throw new SecurityException(ACCESSDENIED);
+            }
+            case "read": if (readList.contains(process.getPermissionTypeByUserAccessId().getPermissionTypeId()) ||
+                    (userRolesNameList.contains(processCreater)&&readList.contains(process.getPermissionTypeByGroupAccessId().getPermissionTypeId()))
+                    || (!userRolesNameList.contains(processCreater)&&readList.contains(process.getPermissionTypeByOthersAccessId().getPermissionTypeId()))
+                    )
+            {
+                return ACCESSGRANTED;
+            }
+            else
+            {
+                LOGGER.info("user read");
+                throw new SecurityException(ACCESSDENIED);
+            }
+            case "execute": if (executeList.contains(process.getPermissionTypeByUserAccessId().getPermissionTypeId())||
+                    (userRolesNameList.contains(processCreater)&&executeList.contains(process.getPermissionTypeByGroupAccessId().getPermissionTypeId()))
+                    || (!userRolesNameList.contains(processCreater)&&executeList.contains(process.getPermissionTypeByOthersAccessId().getPermissionTypeId()))
+                    )
+            {
+                return ACCESSGRANTED;
+            }
+            else
+            {
+                LOGGER.info("user execute");
+                throw new SecurityException(ACCESSDENIED);
+            }
+            default: {LOGGER.info(" no operation");
+                throw new SecurityException("no  operation");
+            }
+
+        }
+
+
+    }
+    else{
+    if (userRolesNameList.contains(processCreater))
+    {
+        switch (action){
+            case "write": if (writeList.contains(process.getPermissionTypeByGroupAccessId().getPermissionTypeId()))
+                               {
+                                   return ACCESSGRANTED;
+                               }
+                           else
+                          {
+                              LOGGER.info("group write");
+                              throw new SecurityException(ACCESSDENIED);
+                          }
+            case "read": if (readList.contains(process.getPermissionTypeByGroupAccessId().getPermissionTypeId()))
+                               {
+                                   return ACCESSGRANTED;
+                               }
+                           else
+                          {
+                              LOGGER.info("group read");
+                              throw new SecurityException(ACCESSDENIED);
+                          }
+            case "execute": if (executeList.contains(process.getPermissionTypeByGroupAccessId().getPermissionTypeId()))
+                            {
+                                return ACCESSGRANTED;
+                            }
+                            else
+                            {
+                                LOGGER.info("group execute");
+                                throw new SecurityException(ACCESSDENIED);
+                            }
+            default: {LOGGER.info("no   operation");
+                throw new SecurityException(" no operation");
+            }
+        }
+    }
+    else {
+        switch (action){
+            case "write": if (writeList.contains(process.getPermissionTypeByOthersAccessId().getPermissionTypeId()))
+            {
+                return ACCESSGRANTED;
+            }
+            else
+            {
+                LOGGER.info("other write");
+                throw new SecurityException(ACCESSDENIED);
+            }
+            case "read": if (readList.contains(process.getPermissionTypeByOthersAccessId().getPermissionTypeId()))
+            {
+                return ACCESSGRANTED;
+            }
+            else
+            {
+                LOGGER.info("other read");
+                throw new SecurityException(ACCESSDENIED);
+            }
+            case "execute": if (executeList.contains(process.getPermissionTypeByOthersAccessId().getPermissionTypeId()))
+            {
+                return ACCESSGRANTED;
+            }
+            else
+            {
+                LOGGER.info("other execute");
+                throw new SecurityException(ACCESSDENIED);
+            }
+            default: {LOGGER.info("nooperation");
+                throw new SecurityException("no_operation");
+            }
+        }
+
+    }
+
+}
+}
 }

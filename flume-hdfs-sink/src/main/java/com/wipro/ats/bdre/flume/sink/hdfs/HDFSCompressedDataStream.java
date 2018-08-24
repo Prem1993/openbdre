@@ -36,7 +36,7 @@ import java.io.IOException;
 
 public class HDFSCompressedDataStream extends AbstractHDFSWriter {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(HDFSCompressedDataStream.class);
 
   private FSDataOutputStream fsOut;
@@ -57,7 +57,6 @@ public class HDFSCompressedDataStream extends AbstractHDFSWriter {
   @Override
   public void configure(Context context) {
     super.configure(context);
-
     // extracting in use suffix
     inUseSuffix = context.getString("hdfs.inUseSuffix","");
 
@@ -69,7 +68,7 @@ public class HDFSCompressedDataStream extends AbstractHDFSWriter {
         false);
     serializerContext = new Context(
         context.getSubProperties(EventSerializer.CTX_PREFIX));
-    logger.info("Serializer = " + serializerType + ", UseRawLocalFileSystem = "
+    LOGGER.info("Serializer = " + serializerType + ", UseRawLocalFileSystem = "
         + useRawLocalFileSystem);
   }
 
@@ -90,12 +89,12 @@ public class HDFSCompressedDataStream extends AbstractHDFSWriter {
       if(hdfs instanceof LocalFileSystem) {
         hdfs = ((LocalFileSystem)hdfs).getRaw();
       } else {
-        logger.warn("useRawLocalFileSystem is set to true but file system " +
+        LOGGER.warn("useRawLocalFileSystem is set to true but file system " +
             "is not of type LocalFileSystem: " + hdfs.getClass().getName());
       }
     }
     boolean appending = false;
-    if (conf.getBoolean("hdfs.append.support", false) == true && hdfs.isFile
+    if (conf.getBoolean("hdfs.append.support", false) && hdfs.isFile
     (dstPath)) {
       fsOut = hdfs.append(dstPath);
       appending = true;
@@ -168,7 +167,7 @@ public class HDFSCompressedDataStream extends AbstractHDFSWriter {
     unregisterCurrentStream();
 
     // calling the method to save file details in tables
-    new HDFSDataStream().saveFileToHDFS(conf, dstPath, inUseSuffix, processId);
+    HDFSDataStream.getHDFSDataStream().saveFileToHDFS(conf, dstPath, inUseSuffix, processId);
 
   }
 

@@ -1,10 +1,21 @@
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring"%>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="UTF-8" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-        <title>Bigdata Ready Enterprise</title>
+        <title><spring:message code="common.page.title_bdre_1"/></title>
+	<script>
+	  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	  //Please replace with your own analytics id
+	  ga('create', 'UA-72345517-1', 'auto');
+	  ga('send', 'pageview');
+	</script>
+
         <!-- Include one of jTable styles. -->
 
         <link href="../css/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
@@ -19,7 +30,7 @@
         <script type="text/javascript">
 	    $(document).ready(function () {
 		$('#Container').jtable({
-		    title: 'Users List',
+		    title: '<spring:message code="users.page.title_list"/>',
 		    paging: true,
 		    pageSize: 10,
 		    sorting: true,
@@ -108,12 +119,12 @@
 			    listClass: 'bdre-jtable-button',
 			                        display: function (item) {                         //Create an image that will be used to open child table
                                                         
-				var $img = $('<img src="../css/images/three-bar.png" title="User roles info" />');                         //Open child table when user clicks the image
+				var $img = $('<img src="../css/images/three-bar.png" title=<spring:message code="users.page.title_clickable_img"/> />');                         //Open child table when user clicks the image
                                                         
 				$img.click(function () {                            
 				    $('#Container').jtable('openChildTable',                                     
 					    $img.closest('tr'),                                      {                                        
-					title: ' Roles of ' + item.record.username,
+					title: '<spring:message code="users.page.title_user_role"/>'+ ' ' + item.record.username,
 					                                        actions: {                                        
 					    listAction: function (postData) {
 						return $.Deferred(function ($dfd) {
@@ -194,14 +205,14 @@
 						width: '5%',
 						list: false,
 						create: false,
-						title: 'User Role Id'
+						title: '<spring:message code="users.page.title_role_id"/>'
 					    },
 					    username: {
 						type: 'hidden',
 						defaultValue: item.record.username,
 					    },
 					    role: {
-						title: 'Role',
+						title: '<spring:message code="users.page.title_role"/>',
 						type: 'combobox',
 						options: {'ROLE_ADMIN': 'Administrator', 'ROLE_USER': 'Application Developer', 'ROLE_READONLY': 'Readonly User'}
 
@@ -222,17 +233,17 @@
 			    list: true,
 			    create: true,
 			    edit: false,
-			    title: 'Username'
+			    title: '<spring:message code="users.page.title_username"/>'
 			},
 			password: {
 				list: false,
 				create: true,
 				edit: true,
 				type: 'password',
-				title: 'Password'
+				title: '<spring:message code="users.page.title_password"/>'
 			},
 			enabled: {
-			    title: 'Enabled',
+			    title: '<spring:message code="users.page.title_enabled"/>',
 			    type: "radiobutton",
 			    edit: true,
 			    options: {

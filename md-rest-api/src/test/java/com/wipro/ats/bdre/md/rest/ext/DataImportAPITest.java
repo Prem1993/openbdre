@@ -14,7 +14,12 @@
 
 package com.wipro.ats.bdre.md.rest.ext;
 
+import com.wipro.ats.bdre.md.rest.RestWrapper;
 import com.wipro.ats.bdre.md.rest.util.Table;
+import org.apache.log4j.Logger;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.springframework.jdbc.support.MetaDataAccessException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +29,7 @@ import java.util.Map;
  * Created by jayabroto on 06-04-2015.
  */
 public class DataImportAPITest {
+    private static final Logger LOGGER = Logger.getLogger(DataImportAPITest.class);
 
     @org.junit.Test
     public void testBuildTablesFromMap() throws Exception {
@@ -98,12 +104,18 @@ public class DataImportAPITest {
         DataImportAPI dataImportAPI = new DataImportAPI();
         Map<String, Table> tables = dataImportAPI.buildTablesFromMap(params);
         for (Table table : tables.values()) {
-            System.out.println("table.getBaseTableDDL() = " + table.getBaseTableDDL());
-            System.out.println("table.getRawTableDDL() = " + table.getRawTableDDL());
-            System.out.println("table.getRawViewDDL() = " + table.getRawViewDDL());
+            LOGGER.debug("table.getBaseTableDDL() = " + table.getColumnList());
+            LOGGER.debug("table.getBaseTableDDL() = " + table.getRawTableColumnAndDataType());
 
-            System.out.println("table.getColumns().values().getSrcColumnName() = " + table.getColumnList());
+            LOGGER.debug("table.getColumns().values().getSrcColumnName() = " + table.getColumnList());
 
         }
+    }
+
+    @Test @Ignore
+    public void testGetTableList() throws MetaDataAccessException {
+        DataImportAPI dataImportAPI = new DataImportAPI();
+        RestWrapper restWrapper= dataImportAPI.getTableList("jdbc:oracle:thin:@localhost:1521/xe", "BDREORACLE", "root", "oracle.jdbc.driver.OracleDriver", "BDREORACLE");
+        LOGGER.debug("restWrapper = " + restWrapper);
     }
 }

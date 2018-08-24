@@ -387,20 +387,70 @@ $scope.insertProp = function(cfgDetails) {
 $scope.uploadFile = function(processId,parentProcessId,subDir,cg) {
 
         var args = [parentProcessId,subDir,cg+'-propval'];
+        var fileArgs=[parentProcessId,subDir,$("#"+args[2])[0].files[0].name];
+        var fileData=fileHandlerAC('/mdrest/filehandler/check/','POST',fileArgs);
         var dataRecord = fileHandlerAC('/mdrest/filehandler/upload/', 'POST', args);
 
     if (dataRecord ) {
-         //After file load added following to properties table: '+subDir + '/'+fileName + ' against scriptPath key.');
-         
-         var property = propertiesAC('/mdrest/properties/', 'DELETE', [processId,'scriptPath']);
-         var putData = "configGroup="+cg+"&key="+'scriptPath'+"&value="+subDir+'/'+dataRecord.Record.fileName+"&description="+'File path'+"&processId="+processId;
+         //After file load added following to properties table: '+subDir + '/'+fileName + ' against a random generated key.');
+
+         if(cg=='extraFiles'){
+         function generatePropKey()
+         {
+             var text = "FileId-";
+             var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+             for( var i=0; i < 5; i++ )
+                 text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+             return text;
+         }
+         var putData = "configGroup="+cg+"&key="+generatePropKey()+"&value="+subDir+'/'+dataRecord.Record.fileName+"&description="+'File path'+"&processId="+processId;
+
+         console.log("file exists="+fileData.fileExists);
+         if(fileData.fileExists==false){
          cfgDetails = propertiesAC('/mdrest/properties/', 'PUT', putData);
-        $.get('/mdrest/properties/'+processId, function(getdata) {
-            $scope.chartViewModel.selectedProcessProps = getdata.Record;
-        });
-        $scope.getKeyValue(cfgDetails);
-        alertBox('info', 'File uploaded :'+dataRecord.Record.fileName+','+'size:'+(dataRecord.Record.fileSize/1024).toFixed(2)+'KB'+' and new property added');
-       
+                  $.get('/mdrest/properties/'+processId, function(getdata) {
+                  $scope.chartViewModel.selectedProcessProps = getdata.Record;
+                  });
+                 $scope.getKeyValue(cfgDetails);
+                 alertBox('info', 'File uploaded :'+dataRecord.Record.fileName+','+'size:'+(dataRecord.Record.fileSize/1024).toFixed(2)+'KB'+' and new property added');
+         }
+         }
+
+       else if(cg=='mapper'){
+             console.log(cg);
+             var property = propertiesAC('/mdrest/properties/', 'DELETE', [processId,'mapperPath']);
+             var putData = "configGroup="+cg+"&key="+'mapperPath'+"&value="+subDir+'/'+dataRecord.Record.fileName+"&description="+'File path'+"&processId="+processId;
+             cfgDetails = propertiesAC('/mdrest/properties/', 'PUT', putData);
+            $.get('/mdrest/properties/'+processId, function(getdata) {
+                $scope.chartViewModel.selectedProcessProps = getdata.Record;
+            });
+            $scope.getKeyValue(cfgDetails);
+            alertBox('info', 'File uploaded :'+dataRecord.Record.fileName+','+'size:'+(dataRecord.Record.fileSize/1024).toFixed(2)+'KB'+' and new property added');
+            }
+       else if(cg=='reducer'){
+             console.log(cg);
+             var property = propertiesAC('/mdrest/properties/', 'DELETE', [processId,'reducerPath']);
+             var putData = "configGroup="+cg+"&key="+'reducerPath'+"&value="+subDir+'/'+dataRecord.Record.fileName+"&description="+'File path'+"&processId="+processId;
+             cfgDetails = propertiesAC('/mdrest/properties/', 'PUT', putData);
+            $.get('/mdrest/properties/'+processId, function(getdata) {
+                $scope.chartViewModel.selectedProcessProps = getdata.Record;
+            });
+            $scope.getKeyValue(cfgDetails);
+            alertBox('info', 'File uploaded :'+dataRecord.Record.fileName+','+'size:'+(dataRecord.Record.fileSize/1024).toFixed(2)+'KB'+' and new property added');
+            }
+     else {
+             console.log(cg);
+             var property = propertiesAC('/mdrest/properties/', 'DELETE', [processId,'scriptPath']);
+             var putData = "configGroup="+cg+"&key="+'scriptPath'+"&value="+subDir+'/'+dataRecord.Record.fileName+"&description="+'File path'+"&processId="+processId;
+             cfgDetails = propertiesAC('/mdrest/properties/', 'PUT', putData);
+            $.get('/mdrest/properties/'+processId, function(getdata) {
+                $scope.chartViewModel.selectedProcessProps = getdata.Record;
+            });
+            $scope.getKeyValue(cfgDetails);
+            alertBox('info', 'File uploaded :'+dataRecord.Record.fileName+','+'size:'+(dataRecord.Record.fileSize/1024).toFixed(2)+'KB'+' and new property added');
+            }
     }
     else {
         alertBox('warning', 'File upload failed');
@@ -408,7 +458,7 @@ $scope.uploadFile = function(processId,parentProcessId,subDir,cg) {
 }
 
 $scope.uploadJar = function(parentProcessId,subDir,fileId) {
-   
+
     var args = [parentProcessId,subDir,fileId];
     var dataRecord = fileHandlerAC('/mdrest/filehandler/upload/', 'POST', args);
 
@@ -416,7 +466,7 @@ $scope.uploadJar = function(parentProcessId,subDir,fileId) {
 
         $scope.getJarList();
         alertBox('info', 'Jar uploaded : '+ dataRecord.Record.fileName+','+'size:'+(dataRecord.Record.fileSize/1024).toFixed(2)+'KB');
-        
+
     }
     else {
         alertBox('warning', dataRecord.Record.fileName+' upload failed');
@@ -443,7 +493,7 @@ $scope.deleteFile = function(parentProcessId,cfgDetails,cfgKVP) {
 
     if (dataRecord ) {
          //After file delete remove following from properties table: '+subDir + '/'+fileName + ' against scriptPath key.');
-         var property = propertiesAC('/mdrest/properties/', 'DELETE', [cfgKVP.processId,'scriptPath']);
+         var property = propertiesAC('/mdrest/properties/', 'DELETE', [cfgKVP.processId,cfgKVP.key]);
          if (property) {
         $.get('/mdrest/properties/'+ cfgKVP.processId, function(getdata) {
             $scope.chartViewModel.selectedProcessProps = getdata.Record;
@@ -516,7 +566,7 @@ $scope.arrangePositions = function() {
         if (dataRecord) {
             updatePositionsFromArrangedData(dataRecord);
             $scope.init($scope.parentPidRecord);
-            // location.reload(true);
+            location.reload(true);
         }
         else {
             console.log('error');
@@ -594,6 +644,8 @@ $scope.exportSVG = function() {
 //
 $scope.newPageBusDomain = {};
 $scope.newPageProcessType = {};
+$scope.newPagePermissionType={};
+$scope.newPageUserRoles={};
 $scope.newPageWorkflowType = {};
 $scope.intialiseNewProcessPage =function() {
 
@@ -612,6 +664,24 @@ $scope.intialiseNewProcessPage =function() {
     else {
         console.log('processtypeOptionlist not loaded');
     }
+    var permissiontypeOptionslist = permissiontypeOptionslistAC('/mdrest/process/options/', 'POST', '');
+        if (permissiontypeOptionslist) {
+            $scope.newPagePermissionType = permissiontypeOptionslist;
+            console.log('info -- PermissiontypeOptionlist Type Options Listed');
+        }
+        else {
+            console.log('PermissiontypeOptionlist not loaded');
+        }
+
+        var userrolestypeOptionslist = userrolestypeOptionslistAC('/mdrest/userroles/options/', 'POST', '');
+                if (permissiontypeOptionslist) {
+                    $scope.newPageUserRoles = userrolestypeOptionslist;
+                    console.log('info -- UserRoles Type Options Listed');
+                }
+                else {
+                    console.log('UserRoles not loaded');
+                }
+
     var workflowtypeOptionslist = workflowtypeOptionslistAC('/mdrest/workflowtype/optionslist',  'POST', '');
     if (workflowtypeOptionslist) {
         $scope.newPageWorkflowType = workflowtypeOptionslist;
@@ -634,6 +704,10 @@ $scope.createFirstProcess = function() {
         'nextProcessIds': '0',
         'enqProcessId': '0',
         'busDomainId': $('#domain').val(),
+        'ownerRoleId':$('#ownerRoleId').val(),
+         'permissionTypeByUserAccessId': $('#permissionTypeByUserAccessId').val(),
+         'permissionTypeByGroupAccessId': $('#permissionTypeByGroupAccessId').val(),
+         'permissionTypeByOthersAccessId': $('#permissionTypeByOthersAccessId').val(),
         'processTypeId': $('#type').val(),
         'processTemplateId': '',
         'workflowId': $('#workflowtype').val()
@@ -642,7 +716,7 @@ $scope.createFirstProcess = function() {
     dataRecord = processAC('/mdrest/process', 'PUT', postData);
     if (dataRecord) {
         location.href='/mdui/pages/wfdesigner.page?processId='+ dataRecord.processId;
-        alertBox('info', 'Parent process created');
+        console.log('info', 'Parent process created');
     }
     else {
         console.log('Parent process not created');
@@ -739,5 +813,12 @@ $scope.confirmDialog = function (message, callBackFunctionName){
                 });
                 $scope.chartViewModel.deleteSelected();
             }
+        };
+
+        $scope.isFileId = function(key){
+
+                   var patt = new RegExp("FileId-");
+                   var res = patt.test(key);
+                   return res;
         };
     }]);

@@ -42,7 +42,7 @@ public class ProcessTypeDAOTest {
     @Ignore
     @Test
     public void testList() throws Exception {
-        LOGGER.info("Size of ProcessType is atleast:" + processTypeDAO.list(null, 0, 10).size());
+        LOGGER.info("Size of ProcessType is atleast:" + processTypeDAO.list(null).size());
     }
     @Ignore
     @Test
@@ -75,7 +75,6 @@ public class ProcessTypeDAOTest {
         processTypeDAO.delete(id);
         LOGGER.info("Deleted ProcessType Entry with ID:" + id);
        // LOGGER.info("Size of ProcessType is atleast:" + processTypeDAO.listFull(0, 10).size());
-        LOGGER.info("Size of ProcessType is atleast:" + processTypeDAO.list(null, 0, 10).size());
         LOGGER.info("Size of ProcessType is:" + processTypeDAO.totalRecordCount(null));
 
     }

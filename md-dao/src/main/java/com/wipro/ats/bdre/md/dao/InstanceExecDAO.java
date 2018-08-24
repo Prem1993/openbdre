@@ -15,8 +15,11 @@
 package com.wipro.ats.bdre.md.dao;
 
 import com.wipro.ats.bdre.exception.MetadataException;
+import com.wipro.ats.bdre.md.beans.SLAMonitoringBean;
 import com.wipro.ats.bdre.md.dao.jpa.Batch;
 import com.wipro.ats.bdre.md.dao.jpa.InstanceExec;
+import com.wipro.ats.bdre.md.dao.jpa.Process;
+import com.wipro.ats.bdre.md.dao.jpa.Properties;
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -29,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -53,15 +57,13 @@ public class InstanceExecDAO {
         try {
             if (processId == null) {
 
-                // select count(instance_exec_id) from instance_exec into counter;
                 counter = session.createCriteria(InstanceExec.class).list().size();
-                Criteria joinBatchInstanceExec = session.createCriteria(Batch.class, "b").createAlias("b.instanceExec", "ieid", JoinType.RIGHT_OUTER_JOIN).addOrder(Order.desc("ieid.instanceExecId"));
+                Criteria joinBatchInstanceExec = session.createCriteria(InstanceExec.class).addOrder(Order.desc("instanceExecId"));
                 joinBatchInstanceExec.setFirstResult(pageNum);
                 joinBatchInstanceExec.setMaxResults(numResults);
-                batchList = joinBatchInstanceExec.list();
+                instanceExeces = joinBatchInstanceExec.list();
 
             } else {
-                // select count(instance_exec_id) from instance_exec where process_id = pid into counter;
                 counter = session.createCriteria(InstanceExec.class).add(Restrictions.eq("process.processId", processId)).list().size();
                 Criteria joinBatchInstanceExec = session.createCriteria(Batch.class, "b").createAlias("b.instanceExec", "ieid", JoinType.RIGHT_OUTER_JOIN).add(Restrictions.eq("ieid.process.processId", processId)).addOrder(Order.desc("ieid.instanceExecId"));
                 joinBatchInstanceExec.setFirstResult(pageNum);
@@ -161,5 +163,68 @@ public class InstanceExecDAO {
         } finally {
             session.close();
         }
+    }
+
+
+   public List<SLAMonitoringBean> slaMonitoringData(List<Process> subProcessList)
+    {
+        Session session = sessionFactory.openSession();
+        List<SLAMonitoringBean> slaMonitoringBeanList=new ArrayList<>();
+        try {
+            session.beginTransaction();
+            for(Process process:subProcessList)
+            {
+               Criteria instanceExecListCriteria= session.createCriteria(InstanceExec.class).add(Restrictions.eq("process",process)).addOrder(Order.asc("startTs")).setMaxResults(25);
+                List<InstanceExec> instanceExecList=instanceExecListCriteria.list();
+                long sumTime=0;
+                long currentTime=0;
+                boolean processRunning = false;
+                int stateOfProcess = 0;
+                int running = 0;
+                int failed = 0;
+                int total=instanceExecList.size();
+                for (InstanceExec instanceExec:instanceExecList)
+                {
+                    if(instanceExec.getEndTs()!=null){
+                    sumTime += (instanceExec.getEndTs().getTime() - instanceExec.getStartTs().getTime());
+                    currentTime=instanceExec.getEndTs().getTime() - instanceExec.getStartTs().getTime();
+                        stateOfProcess = instanceExec.getExecStatus().getExecStateId();
+                    }
+                    else
+                    {
+                        processRunning = true;
+                        sumTime += (new Date().getTime() - instanceExec.getStartTs().getTime());
+                        currentTime=new Date().getTime() - instanceExec.getStartTs().getTime();
+                        stateOfProcess = instanceExec.getExecStatus().getExecStateId();
+                    }
+                }
+
+                Criteria propertyCriteria=session.createCriteria(Properties.class).add(Restrictions.eq("process",process)).add(Restrictions.eq("configGroup","groupbar"));
+                Properties properties= (Properties) propertyCriteria.uniqueResult();
+
+                SLAMonitoringBean slaMonitoringBean=new SLAMonitoringBean();
+                slaMonitoringBean.setProcessId(process.getProcessId());
+                slaMonitoringBean.setProcessRunning(processRunning);
+                slaMonitoringBean.setStateOfProcess(stateOfProcess);
+                slaMonitoringBean.setRunning(running);
+                slaMonitoringBean.setFailed(failed);
+                if(total!=0)
+                slaMonitoringBean.setAverageExecutionTime(sumTime/(total*1000));
+                slaMonitoringBean.setCurrentExecutionTime(currentTime/1000);
+                if(properties==null)
+                slaMonitoringBean.setsLATime(0);
+                else
+                slaMonitoringBean.setsLATime(Long.parseLong(properties.getPropValue())/1000);
+                slaMonitoringBeanList.add(slaMonitoringBean);
+            }
+            LOGGER.info("total size of slaMonitotingBeanList "+slaMonitoringBeanList.size());
+        } catch (MetadataException e) {
+            session.getTransaction().rollback();
+            LOGGER.error(e);
+        } finally {
+            session.close();
+        }
+
+        return slaMonitoringBeanList;
     }
 }

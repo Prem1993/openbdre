@@ -22,20 +22,13 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.stereotype.Component;
 
 import java.sql.Timestamp;
 
 /**
  * Created by arijit on 12/8/14.
  */
-@Component
 public class RegisterFile extends MetadataAPIBase {
-    public RegisterFile() {
-
-    }
 
     private static final Logger LOGGER = Logger.getLogger(RegisterFile.class);
     private static final String[][] PARAMS_STRUCTURE = {
@@ -48,6 +41,14 @@ public class RegisterFile extends MetadataAPIBase {
             {"bid", "batch-id", "Batch id(use null for auto-generated batchid)"}
     };
 
+    @Autowired
+    private RegisterFileDAO registerFileDAO;
+
+    public RegisterFile() {
+        AutowireCapableBeanFactory acbFactory = getAutowireCapableBeanFactory();
+        acbFactory.autowireBean(this);
+    }
+
     /**
      * This method runs RegisterFileProc proc in mysql and returns the input data back.
      *
@@ -55,9 +56,8 @@ public class RegisterFile extends MetadataAPIBase {
      * batch-id with their respective notation on command line.
      * @return This method returns same input data as instance of RegisterFIleInfo class.
      */
-    @Autowired
-    private RegisterFileDAO registerFileDAO;
 
+    @Override
     public RegisterFileInfo execute(String[] params) {
 
         try {
@@ -73,7 +73,8 @@ public class RegisterFile extends MetadataAPIBase {
             LOGGER.debug("file size is " + fSize);
             String fHash = commandLine.getOptionValue("file-hash");
             LOGGER.debug("file-hash " + fHash);
-            String creationTs = commandLine.getOptionValue("creation-timestamp");
+            LOGGER.debug("creation _ts modified "+commandLine.getOptionValue("creation-timestamp"));
+            String creationTs = commandLine.getOptionValue("creation-timestamp").replace("__"," ");
             LOGGER.debug("creation Ts " + creationTs);
             String batchId = commandLine.getOptionValue("batch-id");
             LOGGER.debug("batchId " + batchId);
@@ -91,7 +92,6 @@ public class RegisterFile extends MetadataAPIBase {
             registerFileInfo.setFileHash(fHash);
             registerFileInfo.setCreationTs(Timestamp.valueOf(creationTs));
             //Calling proc RegisterFile
-//            registerFileInfo = s.selectOne("call_procedures.RegisterFile", registerFileInfo);
             registerFileInfo = registerFileDAO.registerFile(registerFileInfo);
             LOGGER.debug("registerFileInfo " + registerFileInfo.getPath() + " " + registerFileInfo.getBatchId());
             LOGGER.debug("registerFileInfo " + registerFileInfo.getSubProcessId() + " " + registerFileInfo.getCreationTs());

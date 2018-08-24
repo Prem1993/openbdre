@@ -17,24 +17,21 @@
 
 package com.wipro.ats.bdre.imcrawler.frontier;
 
-import com.wipro.ats.bdre.imcrawler.jpa.Pendingurlsdb;
-import com.wipro.ats.bdre.imcrawler.jpa.Weburlsdb;
+import com.wipro.ats.bdre.md.api.base.MetadataAPIBase;
+import com.wipro.ats.bdre.md.dao.jpa.Pendingurlsdb;
+import com.wipro.ats.bdre.md.dao.jpa.Weburlsdb;
 import com.wipro.ats.bdre.imcrawler.model.PendingUrlsDBDao;
 import com.wipro.ats.bdre.imcrawler.model.WebUrlsDBDao;
 import com.wipro.ats.bdre.imcrawler.url.WebURL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.util.ArrayList;
 import java.util.List;
-
-
 /**
  * @author Yasser Ganjisaffar modified by AS294216
  */
-public class WorkQueues {
+public class WorkQueues extends MetadataAPIBase{
     private String dbName;
     //PersistenceManager manager = PMF.getInstance().getPersistenceManager();
     private final boolean resumable;
@@ -44,9 +41,12 @@ public class WorkQueues {
         this.dbName = dbName;
         this.resumable = resumable;
         /*Hibernate autowire*/
-        ApplicationContext context = new ClassPathXmlApplicationContext("spring-dao.xml");
-        AutowireCapableBeanFactory acbFactory = context.getAutowireCapableBeanFactory();
+        AutowireCapableBeanFactory acbFactory = getAutowireCapableBeanFactory();
         acbFactory.autowireBean(this);
+    }
+
+    public Object execute(String[] params){
+        return null;
     }
 
     @Autowired
@@ -75,11 +75,11 @@ public class WorkQueues {
                             webURL.setDepth(info.getDepth());
                             webURL.setDocid(info.getDocid());
                             webURL.setDomain(info.getDomain());
-                            webURL.setParentDocid(info.getParentDocid());
-                            webURL.setParentUrl(info.getParentUrl());
+                            webURL.setParentDocid(info.getParentdocid());
+                            webURL.setParentUrl(info.getParenturl());
                             webURL.setPath(info.getPath());
-                            webURL.setPriority(info.getPriority());
-                            webURL.setSubDomain(info.getSubDomain());
+                            webURL.setPriority(info.getPriority().byteValue());
+                            webURL.setSubDomain(info.getSubdomain());
                             webURL.setTag(info.getTag());
                             results.add(webURL);
                         }
@@ -97,11 +97,11 @@ public class WorkQueues {
                             webURL.setDepth(info.getDepth());
                             webURL.setDocid(info.getDocid());
                             webURL.setDomain(info.getDomain());
-                            webURL.setParentDocid(info.getParentDocid());
-                            webURL.setParentUrl(info.getParentUrl());
+                            webURL.setParentDocid(info.getParentdocid());
+                            webURL.setParentUrl(info.getParenturl());
                             webURL.setPath(info.getPath());
-                            webURL.setPriority(info.getPriority());
-                            webURL.setSubDomain(info.getSubDomain());
+                            webURL.setPriority(info.getPriority().byteValue());
+                            webURL.setSubDomain(info.getSubdomain());
                             webURL.setTag(info.getTag());
                             results.add(webURL);
                         }
@@ -124,11 +124,11 @@ public class WorkQueues {
                             webURL.setDepth(info.getDepth());
                             webURL.setDocid(info.getDocid());
                             webURL.setDomain(info.getDomain());
-                            webURL.setParentDocid(info.getParentDocid());
-                            webURL.setParentUrl(info.getParentUrl());
+                            webURL.setParentDocid(info.getParentdocid());
+                            webURL.setParentUrl(info.getParenturl());
                             webURL.setPath(info.getPath());
-                            webURL.setPriority(info.getPriority());
-                            webURL.setSubDomain(info.getSubDomain());
+                            webURL.setPriority(info.getPriority().byteValue());
+                            webURL.setSubDomain(info.getSubdomain());
                             webURL.setTag(info.getTag());
                             results.add(webURL);
                         }
@@ -146,11 +146,11 @@ public class WorkQueues {
                             webURL.setDepth(info.getDepth());
                             webURL.setDocid(info.getDocid());
                             webURL.setDomain(info.getDomain());
-                            webURL.setParentDocid(info.getParentDocid());
-                            webURL.setParentUrl(info.getParentUrl());
+                            webURL.setParentDocid(info.getParentdocid());
+                            webURL.setParentUrl(info.getParenturl());
                             webURL.setPath(info.getPath());
-                            webURL.setPriority(info.getPriority());
-                            webURL.setSubDomain(info.getSubDomain());
+                            webURL.setPriority(info.getPriority().byteValue());
+                            webURL.setSubDomain(info.getSubdomain());
                             webURL.setTag(info.getTag());
                             results.add(webURL);
                         }
@@ -202,17 +202,17 @@ public class WorkQueues {
                 Weburlsdb webURLsDB = new Weburlsdb();
                 long lpid = (long) pid;
                 webURLsDB.setPid(lpid);
-                webURLsDB.setInstanceExecid(instanceExecid);
+                webURLsDB.setInstanceexecid(instanceExecid);
                 webURLsDB.setUrl(url.getURL());
                 webURLsDB.setAnchor(url.getAnchor());
                 webURLsDB.setDepth(url.getDepth());
                 webURLsDB.setDocid(url.getDocid());
                 webURLsDB.setDomain(url.getDomain());
-                webURLsDB.setParentDocid(url.getParentDocid());
-                webURLsDB.setParentUrl(url.getParentUrl());
+                webURLsDB.setParentdocid(url.getParentDocid());
+                webURLsDB.setParenturl(url.getParentUrl());
                 webURLsDB.setPath(url.getPath());
-                webURLsDB.setPriority(url.getPriority());
-                webURLsDB.setSubDomain(url.getSubDomain());
+                webURLsDB.setPriority(new Integer(url.getPriority()));
+                webURLsDB.setSubdomain(url.getSubDomain());
                 webURLsDB.setTag(url.getTag());
                 webUrlsDBDao.insert(webURLsDB);
                 //manager.makePersistent(webURLsDB);
@@ -222,17 +222,17 @@ public class WorkQueues {
                 Pendingurlsdb pendingurlsdb = new Pendingurlsdb();
                 long lpid = (long) pid;
                 pendingurlsdb.setPid(lpid);
-                pendingurlsdb.setInstanceExecid(instanceExecid);
+                pendingurlsdb.setInstanceexecid(instanceExecid);
                 pendingurlsdb.setUrl(url.getURL());
                 pendingurlsdb.setAnchor(url.getAnchor());
                 pendingurlsdb.setDepth(url.getDepth());
                 pendingurlsdb.setDocid(url.getDocid());
                 pendingurlsdb.setDomain(url.getDomain());
-                pendingurlsdb.setParentDocid(url.getParentDocid());
-                pendingurlsdb.setParentUrl(url.getParentUrl());
+                pendingurlsdb.setParentdocid(url.getParentDocid());
+                pendingurlsdb.setParenturl(url.getParentUrl());
                 pendingurlsdb.setPath(url.getPath());
-                pendingurlsdb.setPriority(url.getPriority());
-                pendingurlsdb.setSubDomain(url.getSubDomain());
+                pendingurlsdb.setPriority(new Integer(url.getPriority()));
+                pendingurlsdb.setSubdomain(url.getSubDomain());
                 pendingurlsdb.setTag(url.getTag());
                 pendingUrlsDBDao.insert(pendingurlsdb);
                 //manager.makePersistent(pendingURLsDB);

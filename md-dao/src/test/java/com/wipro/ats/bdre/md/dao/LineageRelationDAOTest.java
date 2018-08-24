@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import static org.junit.Assert.*;
 
 import java.util.Date;
 
@@ -50,11 +51,13 @@ public class LineageRelationDAOTest {
     @Autowired
     LineageQueryDAO lineageQueryDAO;
 
+    @Ignore
     @Test
     public void testList() throws Exception {
         LOGGER.info("Size of LineageRelation is atleast:" + lineageRelationDAO.list(0, 10).size());
     }
 
+    @Ignore
     @Test
     public void testTotalRecordCount() throws Exception {
         LOGGER.info("Size of LineageRelation is:" + lineageRelationDAO.totalRecordCount());
@@ -72,13 +75,13 @@ public class LineageRelationDAOTest {
     @Test
     public void testInsertUpdateAndDelete() throws Exception {
         LineageQuery lineageQuery = new LineageQuery();
-        lineageQuery.setQueryId("Test");
+        lineageQuery.setQueryId("Test5");
         lineageQuery.setCreateTs(new Date());
         LineageQueryType lineageQueryType = lineageQueryTypeDAO.get(1);
         lineageQuery.setLineageQueryType(lineageQueryType);
         String lineageQueryId = lineageQueryDAO.insert(lineageQuery);
         LineageRelation lineageRelation = new LineageRelation();
-        lineageRelation.setRelationId("Test_Id");
+        lineageRelation.setRelationId("Test_Id5");
         lineageRelation.setLineageQuery(lineageQuery);
         String lineageRelationId = lineageRelationDAO.insert(lineageRelation);
         LOGGER.info("New LineageRelation added with ID:" + lineageRelationId);
@@ -86,8 +89,12 @@ public class LineageRelationDAOTest {
         lineageRelationDAO.update(lineageRelation);
         lineageRelation = lineageRelationDAO.get(lineageRelationId);
         LOGGER.info("Updated LineageRelation's Dot string is:" + lineageRelation.getDotString());
+        assertEquals("Test Dot String",lineageRelation.getDotString());
+        assertNotNull(lineageRelationDAO.list(0,10));
         lineageRelationDAO.delete(lineageRelationId);
         lineageQueryDAO.delete(lineageQueryId);
         LOGGER.info("LineageRelation Deleted with ID:" + lineageRelationId);
+        LOGGER.info("Size of LineageRelation is:" + lineageRelationDAO.totalRecordCount());
+
     }
 }

@@ -1,6 +1,6 @@
 package com.wipro.ats.bdre.imcrawler.model;
 
-import com.wipro.ats.bdre.imcrawler.jpa.Weburlsdb;
+import com.wipro.ats.bdre.md.dao.jpa.Weburlsdb;
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -69,7 +69,9 @@ public class WebUrlsDBDao {
         session.beginTransaction();
         Long lid = new Long(id.intValue());
         Weburlsdb weburlsdb=(Weburlsdb)session.get(Weburlsdb.class,lid);
-        session.delete(weburlsdb);
+        //delete only if it is present from before i.e. not deleted by other mapper
+//        if(weburlsdb != null)
+            session.delete(weburlsdb);
         session.getTransaction().commit();
     }
 }

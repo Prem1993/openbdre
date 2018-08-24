@@ -53,11 +53,13 @@ public class ProcessDeploymentQueueDAOTest {
     @Autowired
     DeployStatusDAO deployStatusDAO;
 
+    @Ignore
     @Test
     public void testList() throws Exception {
         LOGGER.info("Size of ProcessDeploymentQueue is atleast:" + processDeploymentQueueDAO.list(0, 10).size());
     }
 
+    @Ignore
     @Test
     public void testTotalRecordCount() throws Exception {
         LOGGER.info("Size of ProcessDeploymentQueue is:" + processDeploymentQueueDAO.totalRecordCount());
@@ -79,11 +81,21 @@ public class ProcessDeploymentQueueDAOTest {
     }
 
     @Test
-    @Ignore
     public void testInsertUpdateAndDelete() throws Exception {
-        Process process = processDAO.get(10802);
         BusDomain busDomain = busDomainDAO.get(1);
         ProcessType processType = processTypeDAO.get(2);
+        Process process = new Process();
+        process.setProcessName("Test");
+        process.setDescription("Test Process");
+        process.setBusDomain(busDomain);
+        process.setProcessType(processType);
+        process.setAddTs(new Date());
+        process.setCanRecover(true);
+        process.setEnqueuingProcessId(0);
+        process.setNextProcessId("10802");
+        process.setDeleteFlag(false);
+        process.setEditTs(new Date());
+        Integer id = processDAO.insert(process);
         DeployStatus deployStatus = deployStatusDAO.get((short) 1);
         ProcessDeploymentQueue processDeploymentQueue = new ProcessDeploymentQueue();
         processDeploymentQueue.setProcess(process);
@@ -100,5 +112,6 @@ public class ProcessDeploymentQueueDAOTest {
         LOGGER.info("Updated processDeploymentQueue with user name:" + processDeploymentQueue.getUserName());
         processDeploymentQueueDAO.delete(processDeploymentQueueId);
         LOGGER.info("ProcessDeploymentQueue Deleted with ID:" + processDeploymentQueueId);
+        processDAO.testDelete(id);
     }
 }

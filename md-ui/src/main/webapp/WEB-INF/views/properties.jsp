@@ -1,11 +1,22 @@
 <%@ taglib prefix="security"
 	   uri="http://www.springframework.org/security/tags" %>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>Bigdata Ready Enterprise</title>
+	<title><spring:message code="common.page.title_bdre_1"/></title>
+	<script>
+	  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	  //Please replace with your own analytics id
+	  ga('create', 'UA-72345517-1', 'auto');
+	  ga('send', 'pageview');
+	</script>
+
 	<!-- Include one of jTable styles. -->
 
 	<link href="../css/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
@@ -20,7 +31,7 @@
 	<script type="text/javascript">
 		    $(document).ready(function () {
 	    $('#Container').jtable({
-	    title: 'Properties List',
+	    title: '<spring:message code="properties.page.title_list"/>',
 		    paging: true,
 		    pageSize: 10,
 		    sorting: true,
@@ -51,10 +62,23 @@
 				    type: 'PUT',
 				    data: postData,
 				    dataType: 'json',
-				    success: function (data) {
-				    $dfd.resolve(data);
-				    },
-				    error: function () {
+				   success: function(data) {
+                       if(data.Result == "OK") {
+                           $dfd.resolve(data);
+                       }
+                       else
+                       {
+                        if(data.Message == "ACCESS DENIED")
+                        {
+                        alert(data.Message);
+                        data.Result="OK";
+                        $dfd.resolve(data);
+                        }
+                        else
+                        $dfd.resolve(data);
+                       }
+                   },
+            error: function () {
 				    $dfd.reject();
 				    }
 			    });
@@ -69,8 +93,21 @@
 					    data: item,
 					    dataType: 'json',
 					    success: function(data) {
-					    $dfd.resolve(data);
-					    },
+                                    if(data.Result == "OK") {
+                                        $dfd.resolve(data);
+                                    }
+                                    else
+                                    {
+                                     if(data.Message == "ACCESS DENIED")
+                                     {
+                                     alert(data.Message);
+                                     data.Result="OK";
+                                     $dfd.resolve(data);
+                                     }
+                                     else
+                                     $dfd.resolve(data);
+                                    }
+                                },
 					    error: function() {
 					    $dfd.reject();
 					    }
@@ -82,7 +119,7 @@
 		    fields: {
 
 		    Properties: {
-		    title: 'Click to expand',
+		    title: '<spring:message code="properties.page.title_img_click"/>',
 			    width: '5%',
 			    sorting: false,
 			    edit: false,
@@ -90,12 +127,12 @@
 			    listClass: 'bdre-jtable-button',
 			    display: function(item) {                         //Create an image that will be used to open child table
 
-			    var $img = $('<img src="../css/images/three-bar.png" title="Properties info" />'); //Open child table when user clicks the image
+			    var $img = $('<img src="../css/images/three-bar.png" title=<spring:message code="properties.page.title_img"/> />'); //Open child table when user clicks the image
 
 				    $img.click(function() {
 				    $('#Container').jtable('openChildTable',
 					    $img.closest('tr'), {
-				    title: ' Properties of ' + item.record.processId,
+				    title:  '<spring:message code="properties.page.title_details"/>'+' ' + item.record.configGroup,
 					    paging: true,
 					    pageSize: 10,
 					    actions: {
@@ -108,8 +145,21 @@
 							    data: item,
 							    dataType: 'json',
 							    success: function(data) {
-							    $dfd.resolve(data);
-							    },
+                                            if(data.Result == "OK") {
+                                                $dfd.resolve(data);
+                                            }
+                                            else
+                                            {
+                                             if(data.Message == "ACCESS DENIED")
+                                             {
+                                             alert(data.Message);
+                                             data.Result="OK";
+                                             $dfd.resolve(data);
+                                             }
+                                             else
+                                             $dfd.resolve(data);
+                                            }
+                                        },
 							    error: function() {
 							    $dfd.reject();
 							    }
@@ -120,7 +170,7 @@
 						    console.log(postData.processId);
 							    return $.Deferred(function($dfd) {
 							    $.ajax({
-							    url: '/mdrest/properties/' + item.record.processId + '/' + postData.key,
+							    url: '/mdrest/properties/' + item.record.processId + '/' + postData.key +'/',
 								    type: 'DELETE',
 								    data: item,
 								    dataType: 'json',
@@ -176,15 +226,15 @@
 						    list: false,
 						    create:false,
 						    edit: true,
-						    title: 'Process',
+						    title: '<spring:message code="properties.page.title_process"/>',
 						    defaultValue: item.record.processId,
 					    },
 						    configGroup: {
-						    title: 'Config Group',
+						    title: '<spring:message code="properties.page.title_cg"/>',
 							    defaultValue: item.record.configGroup,
 						    },
 						    key: {
-						    title: 'Key',
+						    title: '<spring:message code="properties.page.title_key"/>',
 							    key : true,
 							    list: true,
 							    create:true,
@@ -192,11 +242,11 @@
 							    defaultValue: item.record.key,
 						    },
 						    value: {
-						    title: 'Value',
+						    title: '<spring:message code="properties.page.title_value"/>',
 							    defaultValue: item.record.value,
 						    },
 						    description: {
-						    title: 'Description',
+						    title: '<spring:message code="properties.page.title_desc"/>',
 							    defaultValue: item.record.description,
 						    },
 					    }
@@ -211,43 +261,43 @@
 			    }
 		    },
 			    configGroup: {
-			    title :'Config Group',
+			    title :'<spring:message code="properties.page.title_cg"/>',
 				    key : true,
 				    list: false,
 				    create:true,
 				    edit: false,
-				    defaultValue:"NewConfig"
+				    defaultValue:'<spring:message code="properties.page.devault_val_cg"/>'
 			    }, key: {
-		    title: 'Key',
+		    title: '<spring:message code="properties.page.title_key"/>',
 			    key : true,
 			    list: false,
 			    create:true,
 			    edit: false,
-			    defaultValue:"NewKey"
+			    defaultValue:'<spring:message code="properties.page.devault_val_key"/>'
 
 		    }, value: {
-		    title: 'Value',
+		    title: '<spring:message code="properties.page.title_value"/>',
 			    key : true,
 			    list : false,
 			    create : true,
 			    edit : false,
-			    defaultValue: "NewValue"
+			    defaultValue: '<spring:message code="properties.page.devault_val_value"/>'
 
 		    },
 			    description: {
-			    title: 'Description',
+			    title: '<spring:message code="properties.page.title_desc"/>',
 				    list : false,
 				    create : true,
 				    edit : false,
 				    key : true,
-				    defaultValue:"NewDescription"
+				    defaultValue:'<spring:message code="properties.page.devault_val_desc"/>'
 			    },
 			    processId: {
 			    key : true,
 				    list: true,
 				    create:true,
 				    edit: false,
-				    title: 'Process'
+				    title: '<spring:message code="properties.page.title_process"/>'
 
 			    }
 		    }

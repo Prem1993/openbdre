@@ -30,6 +30,10 @@ public class CrawlerInfo {
     @Max(value = Integer.MAX_VALUE)
     @NotNull
     private Integer busDomainId;
+    @Min(value = 1)
+    @Max(value = Integer.MAX_VALUE)
+    @NotNull
+    private Integer workflowTypeId;
     @Min(value = 0)
     @Max(value = 10000)
     @NotNull
@@ -43,11 +47,13 @@ public class CrawlerInfo {
     @NotNull
     private Integer maxPagesToFetch;
     @NotNull
-    private Boolean includeBinaryContentInCrawling = false;
+    private Integer includeBinaryContentInCrawling = 0;
     @NotNull
-    private Boolean resumableCrawling = false;
+    private Integer resumableCrawling = 0;
     @NotNull
     private String userAgentString;
+    @NotNull
+    private String outputPath;
     private String proxyHost;
     private Integer proxyPort;
     private String proxyUserName;
@@ -76,6 +82,14 @@ public class CrawlerInfo {
 
     public Integer getPolitenessDelay() {
         return politenessDelay;
+    }
+
+    public String getOutputPath() {
+        return outputPath;
+    }
+
+    public void setOutputPath(String outputPath) {
+        this.outputPath = outputPath;
     }
 
     public String getProcessName() {
@@ -126,19 +140,19 @@ public class CrawlerInfo {
         this.maxPagesToFetch = maxPagesToFetch;
     }
 
-    public Boolean getIncludeBinaryContentInCrawling() {
+    public Integer getIncludeBinaryContentInCrawling() {
         return includeBinaryContentInCrawling;
     }
 
-    public void setIncludeBinaryContentInCrawling(Boolean includeBinaryContentInCrawling) {
+    public void setIncludeBinaryContentInCrawling(Integer includeBinaryContentInCrawling) {
         this.includeBinaryContentInCrawling = includeBinaryContentInCrawling;
     }
 
-    public Boolean getResumableCrawling() {
+    public Integer getResumableCrawling() {
         return resumableCrawling;
     }
 
-    public void setResumableCrawling(Boolean resumableCrawling) {
+    public void setResumableCrawling(Integer resumableCrawling) {
         this.resumableCrawling = resumableCrawling;
     }
 
@@ -212,5 +226,12 @@ public class CrawlerInfo {
 
     public void setProcessId(Integer processId) {
         this.processId = processId;
+    }
+    public Integer getWorkflowTypeId() {
+        return workflowTypeId;
+    }
+
+    public void setWorkflowTypeId(Integer workflowTypeId) {
+        this.workflowTypeId = workflowTypeId;
     }
 }

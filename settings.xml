@@ -20,6 +20,7 @@
     <profiles>
         <profile>
             <id>cdh52</id>
+            <activation><activeByDefault>false</activeByDefault></activation>
             <properties>
                 <hadoop.version>2.5.0</hadoop.version>
                 <hive.version>0.13.1-cdh5.2.0</hive.version>
@@ -27,12 +28,15 @@
                 <oozie.version>4.1.0</oozie.version>
                 <storm.version>0.9.3</storm.version>
                 <kafka.version>0.8.1.1</kafka.version>
-                <pig.version>0.15.0</pig.version>
+                <pig.version>0.12.0-cdh5.2.0</pig.version>
                 <flume.version>1.6.0</flume.version>
+                <spark.core.version>1.5.2</spark.core.version>
+                <selected.profile>cdh52</selected.profile>
             </properties>
         </profile>
         <profile>
             <id>hdp22</id>
+            <activation><activeByDefault>false</activeByDefault></activation>
             <properties>
                 <hadoop.version>2.6.0</hadoop.version>
                 <hive.version>0.14.0.2.2.4.10-2</hive.version>
@@ -42,8 +46,43 @@
                 <kafka.version>0.8.1.1</kafka.version>
                 <pig.version>0.15.0</pig.version>
                 <flume.version>1.6.0</flume.version>
+                <spark.core.version>1.5.2</spark.core.version>
+                <selected.profile>hdp22</selected.profile>
             </properties>
         </profile>
+        <profile>
+            <id>bluemix27</id>
+            <activation><activeByDefault>false</activeByDefault></activation>
+            <properties>
+                <hadoop.version>2.6.0</hadoop.version>
+                <hive.version>0.14.0.2.2.4.10-2</hive.version>
+                <sqoop.version>1.4.1-incubating</sqoop.version>
+                <oozie.version>4.1.0</oozie.version>
+                <storm.version>0.9.3</storm.version>
+                <kafka.version>0.8.1.1</kafka.version>
+                <pig.version>0.15.0</pig.version>
+                <flume.version>1.6.0</flume.version>
+                <spark.core.version>1.5.2</spark.core.version>
+                <selected.profile>bluemix27</selected.profile>
+            </properties>
+        </profile>
+<profile>
+            <id>apache26</id>
+            <activation><activeByDefault>false</activeByDefault></activation>
+            <properties>
+                <hadoop.version>2.6.0</hadoop.version>
+                <hive.version>0.13.0</hive.version>
+                <sqoop.version>1.4.1-incubating</sqoop.version>
+                <oozie.version>4.1.0</oozie.version>
+                <storm.version>0.9.3</storm.version>
+                <kafka.version>0.8.1.1</kafka.version>
+                <pig.version>0.15.0</pig.version>
+                <flume.version>1.6.0</flume.version>
+                <spark.core.version>1.5.2</spark.core.version>
+                <selected.profile>apache26</selected.profile>
+            </properties>
+        </profile>
+
         <profile>
             <id>spring</id>
             <properties>
@@ -78,6 +117,7 @@
         <profile>
             <id>javascript</id>
             <properties>
+                <d3js.version>3.4.4-1</d3js.version>
                 <jquery.version>1.11.2</jquery.version>
                 <bootstrap.version>3.3.2</bootstrap.version>
                 <angularjs.version>1.2.15</angularjs.version>
@@ -93,7 +133,10 @@
         <profile>
             <id>general</id>
             <properties>
-                <junit.version>4.11</junit.version>
+                <poi.version>3.10-FINAL</poi.version>
+                <junit.version>4.3.1</junit.version>
+                <org.codehaus.jackson.version>1.9.13</org.codehaus.jackson.version>
+                <commons-io.version>2.1</commons-io.version>
                 <log4j.version>1.2.17</log4j.version>
                 <mysql.connector.version>5.1.34</mysql.connector.version>
                 <mybatis.version>3.2.8</mybatis.version>
@@ -157,10 +200,6 @@
                     <url>http://repo1.maven.org/maven2/</url>
                 </repository>
                 <repository>
-                    <id>maven-repo</id>
-                    <url>http://repo.maven.org/maven2/</url>
-                </repository>
-                <repository>
                     <id>clojars</id>
                     <url>https://clojars.org/repo/</url>
                 </repository>
@@ -179,10 +218,6 @@
                 </repository>
             </repositories>
             <pluginRepositories>
-                <pluginRepository>
-                    <id>maven-repo</id>
-                    <url>http://repo.maven.org/maven2/</url>
-                </pluginRepository>
                 <pluginRepository>
                     <id>maven-central</id>
                     <url>http://repo1.maven.org/maven2/</url>
@@ -208,8 +243,8 @@
         </profile>
 
     </profiles>
+
     <activeProfiles>
-        <activeProfile>cdh52</activeProfile>
         <activeProfile>spring</activeProfile>
         <activeProfile>javax</activeProfile>
         <activeProfile>maven</activeProfile>
@@ -218,5 +253,6 @@
         <activeProfile>databases</activeProfile>
         <activeProfile>repositories</activeProfile>
     </activeProfiles>
+	
 
 </settings>

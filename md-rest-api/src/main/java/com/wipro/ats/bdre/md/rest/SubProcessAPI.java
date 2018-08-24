@@ -14,19 +14,21 @@
 
 package com.wipro.ats.bdre.md.rest;
 
+import com.wipro.ats.bdre.exception.MetadataException;
 import com.wipro.ats.bdre.md.api.base.MetadataAPIBase;
 import com.wipro.ats.bdre.md.beans.table.Process;
 import com.wipro.ats.bdre.md.dao.ProcessDAO;
+import com.wipro.ats.bdre.md.dao.ProcessTypeDAO;
+import com.wipro.ats.bdre.md.dao.PropertiesDAO;
 import com.wipro.ats.bdre.md.dao.jpa.BusDomain;
 import com.wipro.ats.bdre.md.dao.jpa.ProcessTemplate;
 import com.wipro.ats.bdre.md.dao.jpa.WorkflowType;
+import com.wipro.ats.bdre.md.rest.util.BindingResultError;
 import com.wipro.ats.bdre.md.rest.util.DateConverter;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -43,8 +45,14 @@ import java.util.List;
 
 public class SubProcessAPI extends MetadataAPIBase {
     private static final Logger LOGGER = Logger.getLogger(SubProcessAPI.class);
+    private static final String WRITE="write";
+
     @Autowired
     private ProcessDAO processDAO;
+    @Autowired
+    ProcessTypeDAO processTypeDAO;
+    @Autowired
+    PropertiesDAO propertiesDAO;
 
     /**
      * This method calls proc GetSubProcesses and returns a record corresponding to the processid passed.
@@ -54,16 +62,16 @@ public class SubProcessAPI extends MetadataAPIBase {
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
 
-    public
+
     @ResponseBody
-    RestWrapper get(
+    public RestWrapper get(
             @PathVariable("id") Integer processId, Principal principal
     ) {
         RestWrapper restWrapper = null;
         try {
+            processDAO.securityCheck(processId,principal.getName(),"read");
             List<com.wipro.ats.bdre.md.dao.jpa.Process> daoProcessList = processDAO.subProcesslist(processId);
             Integer counter =daoProcessList.size();
-//            List<Process> processes = s.selectList("call_procedures.GetSubProcesses", process);
             List<Process> processes = new ArrayList<Process>();
             for (com.wipro.ats.bdre.md.dao.jpa.Process daoProcess : daoProcessList) {
                 Process tableProcess = new Process();
@@ -94,10 +102,14 @@ public class SubProcessAPI extends MetadataAPIBase {
                 processes.add(tableProcess);
             }
             restWrapper = new RestWrapper(processes, RestWrapper.OK);
-            LOGGER.info("Record with ID:" + processId + " selected from Process by User:" + principal.getName());
+            LOGGER.info("Record with ID : " + processId + " selected from Process by User:" + principal.getName());
             LOGGER.info(processes);
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -108,22 +120,23 @@ public class SubProcessAPI extends MetadataAPIBase {
      * processId passed.
      *
      * @param processId
-     * @param model
      * @return nothing.
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-    public
+
     @ResponseBody
-    RestWrapper delete(
-            @PathVariable("id") Integer processId, Principal principal,
-            ModelMap model) {
+    public RestWrapper delete(
+            @PathVariable("id") Integer processId, Principal principal) {
         RestWrapper restWrapper = null;
         try {
+            com.wipro.ats.bdre.md.dao.jpa.Process process=processDAO.get(processId);
+            processDAO.securityCheck(process.getProcess().getProcessId(),principal.getName(),WRITE);
             processDAO.delete(processId);
             restWrapper = new RestWrapper(null, RestWrapper.OK);
-            LOGGER.info("Record with ID:" + processId + " deleted from Process by User:" + principal.getName());
+            LOGGER.info("Record  with ID:" + processId + " deleted from Process by User:" + principal.getName());
 
         } catch (Exception e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -137,30 +150,19 @@ public class SubProcessAPI extends MetadataAPIBase {
      * @return restWrapper It contains the updated instance of Process.
      */
     @RequestMapping(value = {"/", ""}, method = RequestMethod.POST)
-    public
+
     @ResponseBody
-    RestWrapper update(@ModelAttribute("process")
+    public RestWrapper update(@ModelAttribute("process")
                        @Valid Process process, BindingResult bindingResult, Principal principal) {
         RestWrapper restWrapper = null;
         if (bindingResult.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("<p>Please fix following errors and try again<p><ul>");
-            List<FieldError> errors = bindingResult.getFieldErrors();
-            for (FieldError error : errors) {
-                errorMessages.append("<li>");
-                errorMessages.append(error.getField());
-                errorMessages.append(". Bad value: '");
-                errorMessages.append(error.getRejectedValue());
-                errorMessages.append("'</li>");
-            }
-            errorMessages.append("</ul>");
-            restWrapper = new RestWrapper(errorMessages.toString(), RestWrapper.ERROR);
-            return restWrapper;
+            BindingResultError bindingResultError = new BindingResultError();
+            return bindingResultError.errorMessage(bindingResult);
         }
         try {
-            com.wipro.ats.bdre.md.dao.jpa.Process updateDaoProcess = new com.wipro.ats.bdre.md.dao.jpa.Process();
-            updateDaoProcess.setProcessId(process.getProcessId());
-            com.wipro.ats.bdre.md.dao.jpa.ProcessType daoProcessType = new com.wipro.ats.bdre.md.dao.jpa.ProcessType();
-            daoProcessType.setProcessTypeId(process.getProcessTypeId());
+            processDAO.securityCheck(process.getParentProcessId(),principal.getName(),WRITE);
+            com.wipro.ats.bdre.md.dao.jpa.Process updateDaoProcess = processDAO.get(process.getProcessId());
+            com.wipro.ats.bdre.md.dao.jpa.ProcessType daoProcessType =processTypeDAO.get(process.getProcessTypeId());
             updateDaoProcess.setProcessType(daoProcessType);
             if (process.getWorkflowId() != null) {
                 WorkflowType daoWorkflowType = new WorkflowType();
@@ -176,8 +178,7 @@ public class SubProcessAPI extends MetadataAPIBase {
                 updateDaoProcess.setProcessTemplate(daoProcessTemplate);
             }
             if (process.getParentProcessId() != null) {
-                com.wipro.ats.bdre.md.dao.jpa.Process parentProcess = new com.wipro.ats.bdre.md.dao.jpa.Process();
-                parentProcess.setProcessId(process.getParentProcessId());
+                com.wipro.ats.bdre.md.dao.jpa.Process parentProcess =processDAO.get(process.getParentProcessId());
                 updateDaoProcess.setProcess(parentProcess);
             }
             updateDaoProcess.setDescription(process.getDescription());
@@ -189,10 +190,14 @@ public class SubProcessAPI extends MetadataAPIBase {
                 updateDaoProcess.setCanRecover(process.getCanRecover());
             updateDaoProcess.setEnqueuingProcessId(process.getEnqProcessId());
             if (process.getBatchPattern() != null) {
+                LOGGER.info("Batch cut pattern "+updateDaoProcess.getBatchCutPattern());
                 if (process.getBatchPattern().isEmpty()) {
                     updateDaoProcess.setBatchCutPattern(null);
+                    LOGGER.info("Batch cut pattern-- "+updateDaoProcess.getBatchCutPattern());
                 }
-                updateDaoProcess.setBatchCutPattern(process.getBatchPattern());
+                else {
+                    updateDaoProcess.setBatchCutPattern(process.getBatchPattern());
+                }
             }
             updateDaoProcess.setNextProcessId(process.getNextProcessIds());
             if (process.getDeleteFlag() == null)
@@ -201,22 +206,21 @@ public class SubProcessAPI extends MetadataAPIBase {
                 updateDaoProcess.setDeleteFlag(process.getDeleteFlag());
 
             updateDaoProcess.setEditTs(DateConverter.stringToDate(process.getTableEditTS()));
-//            Process processes = s.selectOne("call_procedures.UpdateProcess", process);
             updateDaoProcess = processDAO.update(updateDaoProcess);
             process.setTableAddTS(DateConverter.dateToString(updateDaoProcess.getAddTs()));
             process.setTableEditTS(DateConverter.dateToString(updateDaoProcess.getEditTs()));
 
-
-//            Process processes = s.selectOne("call_procedures.UpdateProcess", process);
-
             restWrapper = new RestWrapper(process, RestWrapper.OK);
-            LOGGER.info("Record with ID:" + process.getProcessId() + " updated in Process by User:" + principal.getName() + process);
+            LOGGER.info("Record with  ID:" + process.getProcessId() + " updated in Process by User:" + principal.getName() + process);
 
         } catch (Exception e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
     }
+
+
 
     /**
      * This method calls proc InsertProcess and adds a record in process table. it also validates the values passed.
@@ -226,30 +230,22 @@ public class SubProcessAPI extends MetadataAPIBase {
      * @return restWrapper It contains an instance of Process newly added.
      */
     @RequestMapping(value = {"/", ""}, method = RequestMethod.PUT)
-    public
+
     @ResponseBody
-    RestWrapper insert(@ModelAttribute("process")
+    public RestWrapper insert(@ModelAttribute("process")
                        @Valid Process process, BindingResult bindingResult, Principal principal) {
         RestWrapper restWrapper = null;
         if (bindingResult.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("<p>Please fix following errors and try again<p><ul>");
-            List<FieldError> errors = bindingResult.getFieldErrors();
-            for (FieldError error : errors) {
-                errorMessages.append("<li>");
-                errorMessages.append(error.getField());
-                errorMessages.append(". Bad value: '");
-                errorMessages.append(error.getRejectedValue());
-                errorMessages.append("'</li>");
-            }
-            errorMessages.append("</ul>");
-            restWrapper = new RestWrapper(errorMessages.toString(), RestWrapper.ERROR);
-            return restWrapper;
+            BindingResultError bindingResultError = new BindingResultError();
+            return bindingResultError.errorMessage(bindingResult);
         }
         try {
+            processDAO.securityCheck(process.getParentProcessId(),principal.getName(),WRITE);
             com.wipro.ats.bdre.md.dao.jpa.Process insertDaoProcess = new com.wipro.ats.bdre.md.dao.jpa.Process();
-            com.wipro.ats.bdre.md.dao.jpa.ProcessType daoProcessType = new com.wipro.ats.bdre.md.dao.jpa.ProcessType();
-            daoProcessType.setProcessTypeId(process.getProcessTypeId());
+            com.wipro.ats.bdre.md.dao.jpa.ProcessType daoProcessType =processTypeDAO.get(process.getProcessTypeId());
             insertDaoProcess.setProcessType(daoProcessType);
+
+            LOGGER.info("process type:"+daoProcessType.getParentProcessTypeId());
             if (process.getWorkflowId() != null) {
                 WorkflowType daoWorkflowType = new WorkflowType();
                 daoWorkflowType.setWorkflowId(process.getWorkflowId());
@@ -264,9 +260,10 @@ public class SubProcessAPI extends MetadataAPIBase {
                 insertDaoProcess.setProcessTemplate(daoProcessTemplate);
             }
             if (process.getParentProcessId() != null) {
-                com.wipro.ats.bdre.md.dao.jpa.Process parentProcess = new com.wipro.ats.bdre.md.dao.jpa.Process();
-                parentProcess.setProcessId(process.getParentProcessId());
+                com.wipro.ats.bdre.md.dao.jpa.Process parentProcess = processDAO.get(process.getParentProcessId());
                 insertDaoProcess.setProcess(parentProcess);
+                LOGGER.info("Parent process Id:"+parentProcess.getProcessId());
+
             }
             insertDaoProcess.setDescription(process.getDescription());
             insertDaoProcess.setAddTs(DateConverter.stringToDate(process.getTableAddTS()));
@@ -281,7 +278,9 @@ public class SubProcessAPI extends MetadataAPIBase {
                 if (process.getBatchPattern().isEmpty()) {
                     insertDaoProcess.setBatchCutPattern(null);
                 }
-                insertDaoProcess.setBatchCutPattern(process.getBatchPattern());
+                else {
+                    insertDaoProcess.setBatchCutPattern(process.getBatchPattern());
+                }
             }
             insertDaoProcess.setNextProcessId(process.getNextProcessIds());
             if (process.getDeleteFlag() == null)
@@ -289,16 +288,16 @@ public class SubProcessAPI extends MetadataAPIBase {
             else
                 insertDaoProcess.setDeleteFlag(process.getDeleteFlag());
             insertDaoProcess.setEditTs(DateConverter.stringToDate(process.getTableEditTS()));
+            LOGGER.info("inserting subprocess");
             Integer processId = processDAO.insert(insertDaoProcess);
             process.setProcessId(processId);
             process.setTableAddTS(DateConverter.dateToString(insertDaoProcess.getAddTs()));
             process.setTableEditTS(DateConverter.dateToString(insertDaoProcess.getEditTs()));
-
-//            Process processes = s.selectOne("call_procedures.InsertProcess", process);
             restWrapper = new RestWrapper(process, RestWrapper.OK);
             LOGGER.info("Record with ID:" + process.getProcessId() + " inserted in Process by User:" + principal.getName() + process);
 
         } catch (Exception e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;

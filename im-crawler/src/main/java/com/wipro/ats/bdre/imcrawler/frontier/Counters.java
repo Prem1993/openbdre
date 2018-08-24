@@ -19,14 +19,12 @@ package com.wipro.ats.bdre.imcrawler.frontier;
 
 import com.wipro.ats.bdre.imcrawler.crawler.Configurable;
 import com.wipro.ats.bdre.imcrawler.crawler.CrawlConfig;
-import com.wipro.ats.bdre.imcrawler.jpa.Statisticsdb;
+import com.wipro.ats.bdre.md.dao.jpa.Statisticsdb;
 import com.wipro.ats.bdre.imcrawler.model.StatisticsDBDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,8 +50,7 @@ public class Counters extends Configurable {
     public Counters(CrawlConfig config) {
         super(config);
         /*Hibernate Auto-wire*/
-        ApplicationContext context = new ClassPathXmlApplicationContext("spring-dao.xml");
-        AutowireCapableBeanFactory acbFactory = context.getAutowireCapableBeanFactory();
+        AutowireCapableBeanFactory acbFactory = getAutowireCapableBeanFactory();
         acbFactory.autowireBean(this);
 
         this.counterValues = new HashMap<>();

@@ -24,6 +24,16 @@ import javax.validation.constraints.Size;
  */
 public class FileMonitorInfo {
     @NotNull
+    @Size(min = 1, max = 45)
+    private String processName;
+    @NotNull
+    @Size(min = 1, max = 256)
+    private String processDescription;
+    @Min(value = 1)
+    @Max(value = Integer.MAX_VALUE)
+    @NotNull
+    private Integer busDomainId;
+    @NotNull
     @Size(min = 1, max = 2048)
     private String monitoredDirName;
     @NotNull
@@ -39,6 +49,39 @@ public class FileMonitorInfo {
     @Min(value = 100)
     @Max(value = 10000)
     private int sleepTime;
+
+    public String getKerberosEnabled() {
+        return kerberosEnabled;
+    }
+
+    public void setKerberosEnabled(String kerberosEnabled) {
+        this.kerberosEnabled = kerberosEnabled;
+    }
+
+    private String kerberosEnabled;
+    public String getProcessName() {
+        return processName;
+    }
+
+    public void setProcessName(String processName) {
+        this.processName = processName;
+    }
+
+    public String getProcessDescription() {
+        return processDescription;
+    }
+
+    public void setProcessDescription(String processDescription) {
+        this.processDescription = processDescription;
+    }
+
+    public Integer getBusDomainId() {
+        return busDomainId;
+    }
+
+    public void setBusDomainId(Integer busDomainId) {
+        this.busDomainId = busDomainId;
+    }
     public String getMonitoredDirName() {
         return monitoredDirName;
     }

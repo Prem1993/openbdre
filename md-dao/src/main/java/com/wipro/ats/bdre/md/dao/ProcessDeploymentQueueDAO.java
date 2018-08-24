@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,7 @@ public class ProcessDeploymentQueueDAO {
     public List<ProcessDeploymentQueue> list(Integer pageNum, Integer numResults) {
         Session session = sessionFactory.openSession();
         session.beginTransaction();
-        Criteria criteria = session.createCriteria(ProcessDeploymentQueue.class);
+        Criteria criteria = session.createCriteria(ProcessDeploymentQueue.class).addOrder(Order.desc("deploymentId"));
         criteria.setFirstResult(pageNum);
         criteria.setMaxResults(numResults);
         List<ProcessDeploymentQueue> processDeploymentQueues = criteria.list();
@@ -114,14 +115,10 @@ public class ProcessDeploymentQueueDAO {
             Criteria fetchScriptPath = session.createCriteria(Properties.class).add(Restrictions.eq("id.processId", processId)).add(Restrictions.eq("configGroup", "deploy")).setProjection(Projections.property("propValue"));
 
             String scriptPath = null;
-            if (fetchScriptPath.list().size() != 0)
+            if (!fetchScriptPath.list().isEmpty())
                 scriptPath = (String) fetchScriptPath.uniqueResult();
-            ;
-
-            //if (select deploy_status_id from process_deployment_queue where process_id=p_id and deploy_status_id in (1,2)) is null
-
             Criteria checkProcessAlreadyInPDQ = session.createCriteria(ProcessDeploymentQueue.class).add(Restrictions.eq("process.processId", processId)).add(Restrictions.in("deployStatus.deployStatusId", new Short[]{1, 2}));
-            if (checkProcessAlreadyInPDQ.list().size() == 0) {
+            if (checkProcessAlreadyInPDQ.list().isEmpty()) {
                 Process process = (Process) session.get(Process.class, processId);
                 jpaPdq.setProcess(process);
                 LOGGER.info(process);
@@ -145,7 +142,6 @@ public class ProcessDeploymentQueueDAO {
 
 
                 returnJpaPdq = (ProcessDeploymentQueue) session.get(ProcessDeploymentQueue.class, deploymentId);
-                //select deployment_id as deploymentId,process_id as processId,start_ts as startTs,insert_ts as insertTs,end_ts as endTs,deploy_status_id as deployStatusId,user_name as userName,bus_domain_id as busDomainId,process_type_id as processTypeId, deploy_script_location as deployScriptLocation from process_deployment_queue where deployment_id = LAST_INSERT_ID()  ;
 
 
             } else {

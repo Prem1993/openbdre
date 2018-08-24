@@ -15,6 +15,7 @@
 package com.wipro.ats.bdre.md.beans;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 /**
  * Created by KA294215 on 12-03-2015.
@@ -29,7 +30,8 @@ public class DQSetupInfo {
     private static String rulesUserName = "rules.username";
     @NotNull
     private String rulesPasswordValue;
-    private static String rulesPassword = "rules.password";
+    private static String pwd="rules.password";
+    private static String rulesPassword =pwd ;
     @NotNull
     private String rulesPackageValue;
     private static String rulesPackage = "rules.package";
@@ -42,8 +44,28 @@ public class DQSetupInfo {
     private static String configGroup = "dq";
     @NotNull
     private String description;
+    @NotNull
+    @Size(min = 1, max = 45)
+    private String processName;
     private Integer busDomainId;
+
+    public Integer getWorkflowTypeId() {
+        return workflowTypeId;
+    }
+
+    public void setWorkflowTypeId(Integer workflowTypeId) {
+        this.workflowTypeId = workflowTypeId;
+    }
+
+    private Integer workflowTypeId;
     private Boolean canRecover;
+    private Boolean deleteFlag;
+    private Integer enqId;
+    private Integer page;
+    private Integer counter;
+    private Integer pageSize;
+    private Integer subProcessId;
+    private Integer parentProcessId;
 
     public Boolean getDeleteFlag() {
         return deleteFlag;
@@ -53,12 +75,6 @@ public class DQSetupInfo {
         this.deleteFlag = deleteFlag;
     }
 
-    private Boolean deleteFlag;
-    private Integer enqId;
-    private Integer page;
-    private Integer counter;
-    private Integer pageSize;
-
     public Integer getPageSize() {
         return pageSize;
     }
@@ -66,9 +82,6 @@ public class DQSetupInfo {
     public void setPageSize(Integer pageSize) {
         this.pageSize = pageSize;
     }
-
-    private Integer subProcessId;
-    private Integer parentProcessId;
 
     @Override
     public String toString() {
@@ -79,6 +92,14 @@ public class DQSetupInfo {
                 " configGroup:" + configGroup + " description:" + description.substring(0, Math.min(description.length(), 45)) +
                 " busDomainId:" + busDomainId + " canRecover:" + canRecover + " enqId:" + enqId + " page:" + page + " subProcessId:" + subProcessId +
                 " parentProcessId:" + parentProcessId;
+    }
+
+    public String getProcessName() {
+        return processName;
+    }
+
+    public void setProcessName(String processName) {
+        this.processName = processName;
     }
 
     public Integer getParentProcessId() {

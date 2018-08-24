@@ -21,7 +21,6 @@ import com.wipro.ats.bdre.md.api.GetProcess;
 import com.wipro.ats.bdre.md.api.GetProperties;
 import com.wipro.ats.bdre.md.beans.ProcessInfo;
 import com.wipro.ats.bdre.md.beans.table.GeneralConfig;
-import org.apache.commons.cli.CommandLine;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemManager;
 import org.apache.commons.vfs2.VFS;
@@ -36,6 +35,7 @@ import java.util.Properties;
  */
 public class FileMonRunnableMain extends BaseStructure {
 
+    public static final String ARCHIVE = "_archive";
     private static final Logger LOGGER = Logger.getLogger(FileMonRunnableMain.class);
     private static String monitoredDirName = "";
     private static String filePattern = "";
@@ -44,6 +44,10 @@ public class FileMonRunnableMain extends BaseStructure {
     private static String subProcessId = "";
     private static long sleepTime;
     private static String defaultFSName;
+    private static String hadoopConfDir;
+    private static String kerberosUserName;
+    private static String kerberosKeytabFileLocation;
+    private static String kerberosEnabled;
 
     public static long getSleepTime() {
         return sleepTime;
@@ -74,6 +78,18 @@ public class FileMonRunnableMain extends BaseStructure {
         return deleteCopiedSrc;
     }
 
+    public static String getKerberosKeytabFileLocation() {
+        return kerberosKeytabFileLocation;
+    }
+
+    public static String getKerberosUserName() {
+        return kerberosUserName;
+    }
+
+    public static String getHadoopConfDir() {
+        return hadoopConfDir;
+    }
+
     public static void setDeleteCopiedSrc(boolean deleteCopiedSrc) {
         FileMonRunnableMain.deleteCopiedSrc = deleteCopiedSrc;
     }
@@ -94,25 +110,22 @@ public class FileMonRunnableMain extends BaseStructure {
         return defaultFSName;
     }
 
-    //Created a dummy PARAMS_STRUCTURE variable to get the environment value.
-    private static final String[][] PARAMS_STRUCTURE = {
-            {"p", "process-id", "Process Id of the process to begin"}
-
-    };
 
     public static void main(String[] args) {
         FileMonRunnableMain f2SFileMonitorMain = new FileMonRunnableMain();
         f2SFileMonitorMain.execute(args);
     }
 
+    public static String getKerberosEnabled() {
+        return kerberosEnabled;
+    }
+
     private void execute(String[] params) {
         try {
-            CommandLine commandLine = getCommandLine(params, PARAMS_STRUCTURE);
-
             GetProcess getProcess = new GetProcess();
-            List<ProcessInfo> subProcessList = getProcess.execute(params);
-            subProcessId = subProcessList.get(1).getProcessId().toString();
-
+            List<ProcessInfo> subProcessList = getProcess.getSubProcesses(params);
+            subProcessId = subProcessList.get(0).getProcessId().toString();
+            LOGGER.info("subProcessId="+subProcessId);
             GetProperties getProperties = new GetProperties();
             Properties properties = getProperties.getProperties(subProcessId, "fileMon");
             LOGGER.info("property is " + properties);
@@ -120,9 +133,20 @@ public class FileMonRunnableMain extends BaseStructure {
             GeneralConfig gc = generalConfig.byConigGroupAndKey("imconfig", "common.default-fs-name");
 
             defaultFSName = gc.getDefaultVal();
+            gc = generalConfig.byConigGroupAndKey("imconfig","hadoop-conf-dir");
+            hadoopConfDir = gc.getDefaultVal();
+
+            gc = generalConfig.byConigGroupAndKey("imconfig","kerberos-user-name");
+            kerberosUserName = gc.getDefaultVal();
+
+            gc = generalConfig.byConigGroupAndKey("imconfig","kerberos-keytab-file-location");
+            kerberosKeytabFileLocation = gc.getDefaultVal();
+
             monitoredDirName = properties.getProperty("monitoredDirName");
             filePattern = properties.getProperty("filePattern");
             hdfsUploadDir = properties.getProperty("hdfsUploadDir");
+            kerberosEnabled = properties.getProperty("kerberos");
+
 
             deleteCopiedSrc = Boolean.parseBoolean(properties.getProperty("deleteCopiedSrc"));
             sleepTime = Long.parseLong(properties.getProperty("sleepTime"));
@@ -137,9 +161,11 @@ public class FileMonRunnableMain extends BaseStructure {
             String dir = FileMonRunnableMain.getMonitoredDirName();
             DefaultFileMonitor fm = new DefaultFileMonitor(FileMonitor.getInstance());
             FileObject listenDir = fsManager.resolveFile(dir);
+            FileObject archiveDir = fsManager.resolveFile(dir+"/"+ARCHIVE);
             LOGGER.debug("Monitoring directories " + dir);
-            fm.setRecursive(false);
+            fm.setRecursive(true);
             fm.addFile(listenDir);
+            fm.removeFile(archiveDir);
             fm.start();
             //Now scan the mondir for existing files and add to queue
             FileScan.scanAndAddToQueue();

@@ -23,8 +23,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.util.*;
 
@@ -34,17 +32,20 @@ import java.util.*;
 
 
 public class InitJob extends MetadataAPIBase {
-    public InitJob() {
-        ApplicationContext context = new ClassPathXmlApplicationContext("spring-dao.xml");
-        AutowireCapableBeanFactory acbFactory = context.getAutowireCapableBeanFactory();
-        acbFactory.autowireBean(this);
-    }
 
     private static final Logger LOGGER = Logger.getLogger(InitJob.class);
     private static final String[][] PARAMS_STRUCTURE = {
             {"p", "process-id", "Process Id of the process to begin"},
             {"bmax", "max-batch", "Maximum no.of batches to be taken"},
     };
+    @Autowired
+    private JobDAO jobDAO;
+
+    public InitJob() {
+        AutowireCapableBeanFactory acbFactory = getAutowireCapableBeanFactory();
+        acbFactory.autowireBean(this);
+    }
+
 
     /**
      * This method uses output from InitJob proc and extracts more data out of it and
@@ -69,7 +70,10 @@ public class InitJob extends MetadataAPIBase {
         Map<Integer, List<Long>> sourceInstanceExecIdMap = new HashMap<Integer, List<Long>>();
         //fileList is string of  list of file attached of all batches for that sub process.
         Map<Integer, List<String>> fileListMap = new HashMap<Integer, List<String>>();
-        //fileList is string of  list of file attached of all batches for that sub process.
+        //batchListMap has key as the sub process id and value as corresponding batch id (if a batch id of sub process in initjobrowinfo has multiple files assosciated,
+        // then corresponding value of the map is a comma separated string list of the batch id eg: batch-id1,batch-id1,batch-id1 etc..
+        Map<Integer, List<String>> batchListMap = new HashMap<Integer, List<String>>();
+        //fileBatchMap contains filepath and corresponding batch id as map
 
         InitJobInfo initJobInfo = new InitJobInfo();
         for (InitJobRowInfo initJobRowInfo : initJobRowInfos) {
@@ -89,7 +93,8 @@ public class InitJob extends MetadataAPIBase {
             List batchListForSubProcess = batchMap.get(initJobRowInfo.getProcessId());
             List markingListForSubProcess = markingMap.get(initJobRowInfo.getProcessId());
             List sourceInstanceExecIdListForSubProcess = sourceInstanceExecIdMap.get(initJobRowInfo.getProcessId());
-            List fileListForSubProcess = sourceInstanceExecIdMap.get(initJobRowInfo.getProcessId());
+            List fileListForSubProcess = fileListMap.get(initJobRowInfo.getProcessId());
+            List fileBatchListForSubProcess = batchListMap.get(initJobRowInfo.getProcessId());
             //If the subprocess does not yet have an entry we create an empty list
             if (batchListForSubProcess == null) {
                 batchListForSubProcess = new ArrayList<Long>();
@@ -103,12 +108,16 @@ public class InitJob extends MetadataAPIBase {
             if (fileListForSubProcess == null) {
                 fileListForSubProcess = new ArrayList<String>();
             }
+            if (fileBatchListForSubProcess == null) {
+                fileBatchListForSubProcess = new ArrayList<String>();
+            }
 
             //Populate the map as we loop through each row
             batchMap.put(initJobRowInfo.getProcessId(), batchListForSubProcess);
             markingMap.put(initJobRowInfo.getProcessId(), markingListForSubProcess);
             sourceInstanceExecIdMap.put(initJobRowInfo.getProcessId(), sourceInstanceExecIdListForSubProcess);
             fileListMap.put(initJobRowInfo.getProcessId(), fileListForSubProcess);
+            batchListMap.put(initJobRowInfo.getProcessId(), fileBatchListForSubProcess);
 
             batchListForSubProcess.add(initJobRowInfo.getSourceBatchId());
             markingListForSubProcess.add(initJobRowInfo.getBatchMarking());
@@ -117,6 +126,7 @@ public class InitJob extends MetadataAPIBase {
             }
             if (initJobRowInfo.getFileList() != null || "".equals(initJobRowInfo.getFileList())) {
                 fileListForSubProcess.add(initJobRowInfo.getFileList());
+                fileBatchListForSubProcess.add(initJobRowInfo.getBatchList());
             }
         }
         //set these values that we captured earlier inside the loop
@@ -179,11 +189,20 @@ public class InitJob extends MetadataAPIBase {
 
         for (Integer subProcessId : fileListMap.keySet()) {
             List<String> fileList = fileListMap.get(subProcessId);
-            LOGGER.debug("fileList = " + fileList);
+            LOGGER.debug("fileList = " + fileList+ "sub process id= "+ subProcessId);
             if (fileList.isEmpty() || fileList.get(0) == null || fileList.get(fileList.size() - 1) == null) {
                 continue;
             }
             initJobInfo.getFileListMap().put("FileList." + subProcessId.toString(), fileList.toString().replace("[", "").replace("]", "").replace(", ", ","));
+        }
+
+        for (Integer subProcessId : batchListMap.keySet()) {
+            List<String> batchList = batchListMap.get(subProcessId);
+            LOGGER.debug("filebatchList = " + batchList+ "sub process id= "+ subProcessId);
+            if (batchList.isEmpty() || batchList.get(0) == null || batchList.get(batchList.size() - 1) == null) {
+                continue;
+            }
+            initJobInfo.getBatchListMap().put("FileBatchList." + subProcessId.toString(), batchList.toString().replace("[", "").replace("]", "").replace(", ", ","));
         }
 
         return initJobInfo;
@@ -196,12 +215,10 @@ public class InitJob extends MetadataAPIBase {
      * command line notations.
      * @return This method return ouptut of InitJob proc as an instance of class InitJobRowInfo.
      */
-    @Autowired
-    private JobDAO jobDAO;
 
+    @Override
     public List<InitJobRowInfo> execute(String[] params) {
         List<InitJobRowInfo> initJobRowInfos = new ArrayList<InitJobRowInfo>();
-//        SqlSession s = null;
         try {
             InitJobRowInfo initJobInfo = new InitJobRowInfo();
             CommandLine commandLine = getCommandLine(params, PARAMS_STRUCTURE);
@@ -212,7 +229,6 @@ public class InitJob extends MetadataAPIBase {
 
             initJobInfo.setProcessId(Integer.parseInt(pid));
             initJobInfo.setMaxBatch(Integer.parseInt(maxBId));
-//            initJobRowInfos = s.selectList("call_procedures.InitJob", initJobInfo);
             initJobRowInfos = jobDAO.initJob(initJobInfo.getProcessId(), initJobInfo.getMaxBatch());
             return initJobRowInfos;
         } catch (Exception e) {

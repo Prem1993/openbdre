@@ -30,6 +30,30 @@ var processtypeOptionslistAC = function (ajaxURL, type, arg) {
 	return returnObject;
 }
 
+var permissiontypeOptionslistAC = function (ajaxURL, type, arg) {
+	var returnObject;
+	switch(type) {
+		case 'POST':
+			break;
+		default:
+			console.log('In AC function defualt block');
+	}
+	returnObject = ajaxCall(ajaxURL, type, arg, 'optionscall');
+	return returnObject;
+}
+
+var userrolestypeOptionslistAC = function (ajaxURL, type, arg) {
+	var returnObject;
+	switch(type) {
+		case 'POST':
+			break;
+		default:
+			console.log('In AC function defualt block');
+	}
+	returnObject = ajaxCall(ajaxURL, type, arg, 'optionscall');
+	return returnObject;
+}
+
 var workflowtypeOptionslistAC = function (ajaxURL, type, arg) {
 	var returnObject;
 	switch(type) {
@@ -96,7 +120,7 @@ var propertiesAC = function(ajaxURL, type, arg) {
 			}
 			break;
 		case 'DELETE':
-			ajaxURL = ajaxURL + arg[0] + '/' + arg[1];
+			ajaxURL = ajaxURL + arg[0] + '/' + arg[1]+'/';
 			returnObject = ajaxCall(ajaxURL, type);
 			break;
 		case 'GET':
@@ -195,7 +219,12 @@ var processAC = function (ajaxURL, type, arg) {
 var fileHandlerAC = function (ajaxURL, type, arg) {
 	var returnObject;
 	switch(type) {
-		case 'POST':    
+		case 'POST':
+						if(ajaxURL=='/mdrest/filehandler/check/'){
+						ajaxURL = ajaxURL + arg[0]+'/'+arg[1]+'?file='+arg[2];
+                        returnObject = ajaxCall(ajaxURL, type, arg);
+						}
+						else{
 		                var fd = new FormData();
 		                var fileObj = $("#"+arg[2])[0].files[0];
                         var fileName=fileObj.name;
@@ -217,6 +246,7 @@ var fileHandlerAC = function (ajaxURL, type, arg) {
 							    returnObject=false;
 							}
 						 });
+						 }
 			return returnObject;
             break;
 		case 'PUT':

@@ -14,19 +14,20 @@
 
 package com.wipro.ats.bdre.md.rest;
 
+import com.wipro.ats.bdre.exception.MetadataException;
 import com.wipro.ats.bdre.md.api.base.MetadataAPIBase;
 import com.wipro.ats.bdre.md.beans.ProcessLogInfo;
+import com.wipro.ats.bdre.md.dao.ProcessDAO;
 import com.wipro.ats.bdre.md.dao.ProcessLogDAO;
+import com.wipro.ats.bdre.md.dao.jpa.Process;
+import com.wipro.ats.bdre.md.rest.util.DateConverter;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
-
-//import org.apache.ibatis.session.SqlSession;
-//import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
  * Created by arijit on 1/9/15.
@@ -47,36 +48,56 @@ public class ProcessLogAPI extends MetadataAPIBase {
      */
     @Autowired
     ProcessLogDAO processLogDAO;
-
+    @Autowired
+    ProcessDAO processDAO;
     @RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
-
-    public
     @ResponseBody
-    RestWrapper list(@RequestParam(value = "page", defaultValue = "0") int startPage, @RequestParam(value = "size", defaultValue = "10") int pageSize, @RequestParam(value = "pid", defaultValue = "0") Integer pid, Principal principal) {
-        // SqlSession s = null;
+    public RestWrapper list(@RequestParam(value = "page", defaultValue = "0") int startPage, @RequestParam(value = "size", defaultValue = "10") int pageSize, @RequestParam(value = "pid", defaultValue = "0") Integer pid, Principal principal) {
         RestWrapper restWrapper = null;
+        Integer processId = pid;
         try {
-            // SqlSessionFactory sqlSessionFactory = getSqlSessionFactory(null);
-            // s = sqlSessionFactory.openSession();
-            Integer counter=processLogDAO.totalRecordCount();
             ProcessLogInfo processLogInfo = new ProcessLogInfo();
             if (pid == 0) {
-                pid = null;
+                processId = null;
             }
-            processLogInfo.setProcessId(pid);
+            LOGGER.info("parent processId is " + processId);
+            processLogInfo.setParentProcessId(processId);
             processLogInfo.setPage(startPage);
             processLogInfo.setPageSize(pageSize);
-            //List<ProcessLogInfo> listLog = s.selectList("call_procedures.ListLog", processLogInfo);
-            List<ProcessLogInfo> listLog = processLogDAO.listLog(processLogInfo);
-            for (ProcessLogInfo processLogInfo1 : listLog) {
-                processLogInfo1.setProcessId(processLogInfo1.getParentProcessId());
-                processLogInfo1.setCounter(counter);
+            List<ProcessLogInfo> listLog = new ArrayList<>();
+            List<ProcessLogInfo> logList = processLogDAO.listLog(processLogInfo);
+            LOGGER.info("process log contains before scecurity check " + logList + " " + principal.getName());
+            if (processId != null) {
+                processDAO.securityCheck(processId, principal.getName(), "read");
+                for (ProcessLogInfo log : logList) {
+                    if (log.getParentProcessId().equals(processId))
+                        listLog.add(log);
+                }
             }
+            else{
+            for (ProcessLogInfo log : logList) {
+                String returnValue = "";
+                com.wipro.ats.bdre.md.dao.jpa.Process parentProcess = processDAO.get(log.getParentProcessId());
+                if (parentProcess.getProcess() != null)
+                    returnValue = processDAO.securityCheck(parentProcess.getProcess().getProcessId(), principal.getName(), "read");
+                else
+                    returnValue = processDAO.securityCheck(log.getParentProcessId(), principal.getName(), "read");
+                LOGGER.info(returnValue);
+                List<String> values = new ArrayList<>();
+                values.add("ACCESS GRANTED");
+                values.add("NOT REQUIRED");
+                if (values.contains(returnValue))
+                    listLog.add(log);
 
-            //s.close();
+            }}
+            LOGGER.info("process log contains "+listLog);
             restWrapper = new RestWrapper(listLog, RestWrapper.OK);
             LOGGER.info("All records listed from ProcessLog by User:" + principal.getName());
-        } catch (Exception e) {
+        }catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;
@@ -89,24 +110,29 @@ public class ProcessLogAPI extends MetadataAPIBase {
      * @return restWrapper It contains instance of ProcessLog corresponding to processId passed.
      */
     @RequestMapping(value = {"/{id}"}, method = RequestMethod.GET)
-
-    public
-    @ResponseBody
+    @ResponseBody public
     RestWrapper list(@PathVariable("id") Integer processId, Principal principal) {
-        // SqlSession s = null;
         RestWrapper restWrapper = null;
         try {
-            //SqlSessionFactory sqlSessionFactory = getSqlSessionFactory(null);
-            //s = sqlSessionFactory.openSession();
+            Process parentProcess=processDAO.get(processId);
+            if (parentProcess.getProcess()!=null)
+                processDAO.securityCheck(parentProcess.getProcess().getProcessId(),principal.getName(),"read");
+            else
+                processDAO.securityCheck(processId,principal.getName(),"read");
             ProcessLogInfo processLogInfo = new ProcessLogInfo();
             processLogInfo.setProcessId(processId);
-            // List<ProcessLogInfo> processLogList = s.selectList("call_procedures.GetProcessLog", processLogInfo);
             List<ProcessLogInfo> processLogList = processLogDAO.getProcessLog(processLogInfo);
-            //s.close();
+            for(ProcessLogInfo processLogInfo1:processLogList){
+                processLogInfo1.setTableAddTs(DateConverter.dateToString(processLogInfo1.getAddTs()));
+            }
             restWrapper = new RestWrapper(processLogList, RestWrapper.OK);
             LOGGER.info("Record with ID:" + processId + " selected from ProcessLog by User:" + principal.getName());
 
-        } catch (Exception e) {
+        }catch (MetadataException e) {
+            LOGGER.error(e);
+            restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
+        }catch (SecurityException e) {
+            LOGGER.error(e);
             restWrapper = new RestWrapper(e.getMessage(), RestWrapper.ERROR);
         }
         return restWrapper;

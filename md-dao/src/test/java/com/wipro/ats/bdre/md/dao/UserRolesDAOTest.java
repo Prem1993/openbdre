@@ -25,7 +25,12 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created by PR324290 on 10/28/2015.
@@ -47,11 +52,13 @@ public class UserRolesDAOTest {
     @Autowired
     UsersDAO usersDAO;
 
+    @Ignore
     @Test
     public void testList() throws Exception {
         LOGGER.info("Size of UserRoles is atleast:" + userRolesDAO.list(0, 10).size());
     }
 
+    @Ignore
     @Test
     public void testTotalRecordCount() throws Exception {
         LOGGER.info("Size of UserRoles is:" + userRolesDAO.totalRecordCount());
@@ -76,9 +83,13 @@ public class UserRolesDAOTest {
         userRoles.setRole("Role_updated");
         userRolesDAO.update(userRoles);
         userRoles = userRolesDAO.get(userRolesId);
+        assertEquals("Role_updated",userRoles.getRole());
         LOGGER.info("Updated userRoles with role:" + userRoles.getRole());
+        assertNotNull(userRolesDAO.list(0,10));
         userRolesDAO.delete(userRolesId);
         LOGGER.info("UserRoles Deleted with ID:" + userRolesId);
+        LOGGER.info("Size of UserRoles is:" + userRolesDAO.totalRecordCount());
+
     }
 
     @Test
@@ -86,5 +97,15 @@ public class UserRolesDAOTest {
         List<UserRoles> userRolesList = userRolesDAO.listByName("admin");
         LOGGER.info("No. of records fetched:" + userRolesList.get(0).getRole());
 
+    }
+   @Test
+    public  void testDiffRoles() throws Exception{
+        Map<Integer,String> objects=userRolesDAO.diffRoleList();
+       Iterator it = objects.entrySet().iterator();
+       while (it.hasNext()) {
+           Map.Entry pair = (Map.Entry)it.next();
+           System.out.println(pair.getKey() + " = " + pair.getValue());
+           it.remove(); // avoids a ConcurrentModificationException
+       }
     }
 }

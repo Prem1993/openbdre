@@ -24,6 +24,7 @@ import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -42,16 +44,11 @@ public class PropertiesDAO {
     private static final Logger LOGGER = Logger.getLogger(PropertiesDAO.class);
     @Autowired
     SessionFactory sessionFactory;
-
     public List<Integer> list(Integer pageNum, Integer numResults) {
         Session session = sessionFactory.openSession();
         session.beginTransaction();
-        Criteria criteria = session.createCriteria(Properties.class);
+        Criteria criteria = session.createCriteria(Properties.class).addOrder(Order.desc("id.processId"));
 
-//        ProjectionList projectionList = Projections.projectionList();
-//        projectionList.add(Projections.groupProperty("process"));
-//        criteria.setProjection(projectionList);
-//        criteria.setResultTransformer(Transformers.aliasToBean(Properties.class));
         LOGGER.info("number of entries in properties table" + criteria.list().size());
         criteria.setProjection(Projections.distinct(Projections.property("id.processId")));
         criteria.setFirstResult(pageNum);
@@ -67,10 +64,6 @@ public class PropertiesDAO {
         session.beginTransaction();
         Criteria totalRecord = session.createCriteria(Properties.class);
 
-//        ProjectionList projectionList = Projections.projectionList();
-//        projectionList.add(Projections.groupProperty("process"));
-//        totalRecord.setProjection(projectionList);
-//        totalRecord.setResultTransformer(Transformers.aliasToBean(Properties.class));
         totalRecord.setProjection(Projections.distinct(Projections.property("id.processId")));
         int size = totalRecord.list().size();
         session.getTransaction().commit();
@@ -92,7 +85,14 @@ public class PropertiesDAO {
         PropertiesId propertiesId = null;
         try {
             session.beginTransaction();
+            Process updateProcess=new Process();
+
             propertiesId = (PropertiesId) session.save(properties);
+            updateProcess=(Process)session.get(Process.class,properties.getId().getProcessId());
+            LOGGER.info("process add ts"+updateProcess.getAddTs());
+            session.update(properties);
+            updateProcess.setEditTs(new Date());
+            session.update(updateProcess);
             session.getTransaction().commit();
         } catch (MetadataException e) {
             session.getTransaction().rollback();
@@ -107,7 +107,13 @@ public class PropertiesDAO {
         Session session = sessionFactory.openSession();
         try {
             session.beginTransaction();
+            Process updateProcess=new Process();
+
+            updateProcess=(Process)session.get(Process.class,properties.getId().getProcessId());
+            LOGGER.info("process add ts"+updateProcess.getAddTs());
             session.update(properties);
+            updateProcess.setEditTs(new Date());
+            session.update(updateProcess);
             session.getTransaction().commit();
         } catch (MetadataException e) {
             session.getTransaction().rollback();
@@ -145,7 +151,7 @@ public class PropertiesDAO {
         } catch (Exception e) {
             session.getTransaction().rollback();
             LOGGER.info("Error " + e);
-            return null;
+            return propertiesList;
         } finally {
             session.close();
         }
@@ -196,8 +202,7 @@ public class PropertiesDAO {
             LOGGER.info("Rows affected: " + result);
 
             Criteria fetchProcessIdList = session.createCriteria(com.wipro.ats.bdre.md.dao.jpa.Process.class).add(Restrictions.or(Restrictions.eq("processId", parentProcessId), Restrictions.eq("process.processId", parentProcessId))).setProjection(Projections.property("processId"));
-            List<Integer> pidList = fetchProcessIdList.list();
-            if (fetchProcessIdList.list().size() != 0) {
+            if (!fetchProcessIdList.list().isEmpty()) {
                 //Inserting new Positions
                 for (PositionsInfo positionsInfo : positionsInfoList) {
                     com.wipro.ats.bdre.md.dao.jpa.Properties propertiesX = new com.wipro.ats.bdre.md.dao.jpa.Properties();
@@ -211,8 +216,8 @@ public class PropertiesDAO {
                     propertiesX.setPropValue(positionsInfo.getxPos().toString());
                     propertiesX.setDescription("xposition");
                     propertiesX.setId(propertiesIdForX);
-
                     session.save(propertiesX);
+
 
                     LOGGER.info("Property inserted:" + propertiesX.getId().getPropKey());
 

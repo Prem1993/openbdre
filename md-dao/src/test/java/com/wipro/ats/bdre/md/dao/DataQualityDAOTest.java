@@ -63,13 +63,15 @@ public class DataQualityDAOTest {
         dqSetupInfo.setMinPassThresholdPercent("100");
         dqSetupInfo.setRulesPassword("password");
         dqSetupInfo.setRulesPackage("bank");
-        List<Properties> tableProperties = dataQualityDAO.insertDQSetup(dqSetupInfo);
+        List<Properties> tableProperties = dataQualityDAO.insertDQSetup(dqSetupInfo,"admin");
         LOGGER.info("sub process id is " + tableProperties.get(0).getSubProcessId());
         dqSetupInfo.setSubProcessId(tableProperties.get(0).getSubProcessId());
+        Integer parentProcessId=tableProperties.get(0).getParentProcessId();
+        LOGGER.info("parent process id:"+parentProcessId);
         dataQualityDAO.updateDQSetup(dqSetupInfo);
         LOGGER.info("size of output list " + tableProperties.size());
     }
-
+    @Ignore
     @Test
     public void listTest() {
         List<Properties> tableProperties = dataQualityDAO.listDQSetup(0, 10);
@@ -78,7 +80,7 @@ public class DataQualityDAOTest {
         }
 
     }
-
+    @Ignore
     @Test
     public void deleteTest() {
         dataQualityDAO.deleteDQSetup(10901);
